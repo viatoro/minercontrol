@@ -1,8 +1,9 @@
 package com.moomanow.miner.bean;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class HashRate implements Comparable<HashRate>{
+public class HashRate implements Comparable<HashRate> ,Serializable{
 
 	
 	private BigDecimal rate = BigDecimal.ONE;

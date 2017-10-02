@@ -12,16 +12,18 @@ public class CcminerAppMinerTestLive {
 	
     @Test
     public void test_method_1() {
-    	String path = "./"; 
-    	try {
-    		path = new File(CcminerAppMinerTestLive.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getAbsolutePath();
-			System.out.println(path);
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	IAppMiner appMiner = new CcminerAppMiner(path+"/../../miner/NVIDIA-TPruvot/ccminer-X64.exe");
-    	appMiner.run("neoscrypt", "neoscrypt.mine.zpool.ca", "4233", "3B3uQUKrR4EHNpd56zkrkQFAWB6Erq3bTB", "multipoolminer,c=BTC");
+//    	String path = "./"; 
+//    	try {
+//    		path = new File(CcminerAppMinerTestLive.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getAbsolutePath();
+////			System.out.println(path);
+//		} catch (URISyntaxException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+    	IAppMiner appMiner = new CcminerAppMiner("TPruvot", "neoscrypt", "ccminer-X64.exe","https://github.com/tpruvot/ccminer/releases/download/v2.2-tpruvot/ccminer-x64-2.2.7z");
+//    	appMiner.unSevenZipToDir(new File("/Users/kwan/Downloads","ccminer-x64-2.2.7z"), new File("./miners/"));
+//    	appMiner.download();
+//    	appMiner.run("neoscrypt.mine.zpool.ca", "4233", "3B3uQUKrR4EHNpd56zkrkQFAWB6Erq3bTB", "multipoolminer,c=BTC");
 //    	do {
 //    		appMiner.check();
 //    		HashRate s = appMiner.getHashRate();

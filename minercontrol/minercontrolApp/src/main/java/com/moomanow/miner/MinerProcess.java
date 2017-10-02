@@ -75,7 +75,7 @@ public class MinerProcess {
 	
 	private void load(){
 		List<IAppMiner> list = new LinkedList<IAppMiner>();
-		list.add(new CcminerAppMiner());
+//		list.add(new CcminerAppMiner());
 		allMiners.put("", list );
 		allPools.add(new YaampPool("http://www.zpool.ca/api/status"));
 	}
