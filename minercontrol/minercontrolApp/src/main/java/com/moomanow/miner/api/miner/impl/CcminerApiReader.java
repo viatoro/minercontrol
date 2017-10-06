@@ -1,17 +1,18 @@
-package com.moomanow.miner.api.impl;
+package com.moomanow.miner.api.miner.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.moomanow.miner.api.ApiReader;
+import com.moomanow.miner.api.miner.IMinerReaderApi;
 
-public class CcminerApiReader implements ApiReader {
+public class CcminerApiReader implements IMinerReaderApi {
 	
 	private String host;
 	private int port;
@@ -57,14 +58,13 @@ public class CcminerApiReader implements ApiReader {
 			
 			socket.close();
 			return rate;
+		} catch (ConnectException e) {
+			e.printStackTrace();
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// TODO Auto-generated method stub
 		return null;
 	}
 

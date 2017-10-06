@@ -1,4 +1,4 @@
-package com.moomanow.miner.pool.impl;
+package com.moomanow.miner.api.pool.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -17,10 +17,11 @@ import org.springframework.web.client.RestTemplate;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.bean.RatePrice;
-import com.moomanow.miner.pool.IPool;
+import com.moomanow.miner.config.bean.ConfigPoolBean;
 
-public class YaampPool implements IPool,Serializable {
+public class YaampPool implements IPoolApi,Serializable {
 	/**
 	 * 
 	 */
@@ -29,34 +30,39 @@ public class YaampPool implements IPool,Serializable {
 	private HttpComponentsClientHttpRequestFactory httpFactory;
 	
 	private List<RatePrice> ratePrices = new LinkedList<RatePrice>();
+	private List<String> algs = new LinkedList<String>();
 	private Map<String, RatePrice> mapRatePrices = new HashMap<String, RatePrice>();
-	private String url;
+	private Object data;
+//	private String url;
+	private ConfigPoolBean configPoolBean;
 	
 	
-	public YaampPool(String url) {
-		this();
+	public YaampPool() {
+//		this();
 		HttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build();
 		this.httpFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
-		this.url = url;
+//		this.url = url;
 	}
 	
-	private YaampPool() {
-	}
-	
+//	private YaampPool() {
+//	}
+	@Override
 	public boolean checkRate(){
 		RestTemplate restTemplate = new RestTemplate(httpFactory);
-		String jsonString = restTemplate.getForObject(url, String.class);
+		String jsonString = restTemplate.getForObject(configPoolBean.getPoolApi(), String.class);
 		Gson gson = new GsonBuilder().create();
 		
 		
 		Type type = new TypeToken<Map<String,RatePool>>(){}.getType();
 		Map<String,RatePool> map = gson.fromJson(jsonString, type);
+		data = map;
 		for (Entry<String, RatePool> ratePoolEntry : map.entrySet()) {
 			String key = ratePoolEntry.getKey();
 			RatePool ratePool = ratePoolEntry.getValue();
 			RatePrice ratePrice = mapRatePrices.get(key);
 			if(ratePrice ==null){
 				ratePrice = new RatePrice(key);
+				algs.add(key);
 				ratePrices.add(ratePrice);
 				mapRatePrices.put(key, ratePrice);
 			}
@@ -66,9 +72,14 @@ public class YaampPool implements IPool,Serializable {
 		}
 		return true;
 	}
-
+	@Override
 	public List<RatePrice> getRatePrices() {
 		return ratePrices;
+	}
+	
+	@Override
+	public Map<String, RatePrice> getMapRatePrices() {
+		return mapRatePrices;
 	}
 	
 	
@@ -150,4 +161,31 @@ public class YaampPool implements IPool,Serializable {
 		
 	}
 
+
+	@Override
+	public void setConfigPoolBean(ConfigPoolBean configPoolBean) {
+		this.configPoolBean = configPoolBean;
+	}
+
+	@Override
+	public List<String> getAlg() {
+		return algs;
+	}
+
+	@Override
+	public ConfigPoolBean getConfigPoolBean() {
+		return configPoolBean;
+	}
+
+	@Override
+	public Object getData() {
+		return data;
+	}
+
+	@Override
+	public void setData(Object data) {
+		this.data = data;
+	}
+
+	
 }
