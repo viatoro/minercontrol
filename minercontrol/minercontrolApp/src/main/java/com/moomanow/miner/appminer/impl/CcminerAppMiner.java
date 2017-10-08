@@ -89,7 +89,7 @@ public class CcminerAppMiner implements IAppMiner {
 	}
 	
 	@Override
-	public boolean run(String alg,String host, String port, String user, String password) {
+	public Process run(String alg,String host, String port, String user, String password) {
 		Runtime runTime = Runtime.getRuntime();
 
 		try {
@@ -98,11 +98,11 @@ public class CcminerAppMiner implements IAppMiner {
 
 			Process process = runTime.exec("./miner/" + configMinerBean.getMinerName()+"/"+configMinerBean.getProgame() + " " + command);
 			// process.destroy();
-			return process.isAlive();
+			return process;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return false;
+		return null;
 	}
 	@Override
 	public void destroy() {

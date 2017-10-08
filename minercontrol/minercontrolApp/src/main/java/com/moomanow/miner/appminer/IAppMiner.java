@@ -10,7 +10,7 @@ public interface IAppMiner {
 	public boolean isRun();
 	public HashRate getHashRate(String alg);
 	public void check();
-	public boolean run(String alg, String host, String port, String user, String password);
+	public Process run(String alg, String host, String port, String user, String password);
 	public void destroy();
 	public boolean hasDownloaded();
 	public ConfigMinerBean getConfigMinerBean();

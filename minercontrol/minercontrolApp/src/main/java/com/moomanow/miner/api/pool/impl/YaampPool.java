@@ -3,6 +3,7 @@ package com.moomanow.miner.api.pool.impl;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +36,7 @@ public class YaampPool implements IPoolApi,Serializable {
 	private Object data;
 //	private String url;
 	private ConfigPoolBean configPoolBean;
+	private Long lastTimeCall = Calendar.getInstance().getTimeInMillis()-10000;
 	
 	
 	public YaampPool() {
@@ -48,6 +50,11 @@ public class YaampPool implements IPoolApi,Serializable {
 //	}
 	@Override
 	public boolean checkRate(){
+		if(lastTimeCall > Calendar.getInstance().getTimeInMillis()+10000) {
+			lastTimeCall = Calendar.getInstance().getTimeInMillis();
+			return true;
+		}
+		
 		RestTemplate restTemplate = new RestTemplate(httpFactory);
 		String jsonString = restTemplate.getForObject(configPoolBean.getPoolApi(), String.class);
 		Gson gson = new GsonBuilder().create();
@@ -56,7 +63,11 @@ public class YaampPool implements IPoolApi,Serializable {
 		Type type = new TypeToken<Map<String,RatePool>>(){}.getType();
 		Map<String,RatePool> map = gson.fromJson(jsonString, type);
 		data = map;
-		for (Entry<String, RatePool> ratePoolEntry : map.entrySet()) {
+		if(map==null) {
+			System.out.println(jsonString+ " " +configPoolBean.getPoolApi());
+			return false;
+		}
+		map.entrySet().stream().forEach((ratePoolEntry)->{
 			String key = ratePoolEntry.getKey();
 			RatePool ratePool = ratePoolEntry.getValue();
 			RatePrice ratePrice = mapRatePrices.get(key);
@@ -68,8 +79,7 @@ public class YaampPool implements IPoolApi,Serializable {
 			}
 			BigDecimal btcPerMh = new BigDecimal(ratePool.getEstimate_current()); 
 			ratePrice.setPrice(btcPerMh);
-			
-		}
+		});
 		return true;
 	}
 	@Override

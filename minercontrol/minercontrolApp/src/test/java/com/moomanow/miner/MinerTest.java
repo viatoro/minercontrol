@@ -19,9 +19,9 @@ public class MinerTest {
 	@Test
 	public void test_method_1() {
 		
-		MinerProcess minerProcess = new MinerProcess();
-		
-		minerProcess.start();
+//		MinerProcess minerProcess = new MinerProcess();
+//		
+//		minerProcess.start();
 		
 		
 //		Map<String,Object> root = new HashMap<>();

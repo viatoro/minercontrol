@@ -37,12 +37,15 @@ import ognl.MemberAccess;
 import ognl.Ognl;
 import ognl.OgnlException;
 
-public class MinerProcess {
+public class MinerProcess implements Runnable {
 
 	// private Map<String,List<IAppMiner>> allMiners = new
 	// HashMap<String,List<IAppMiner>>();
 	private Map<String, IAppMiner> allMiners = new HashMap<>();
 	private List<IAppMiner> runing = new ArrayList<>();
+	
+	private List<Process> processBenchmarking = new ArrayList<>();
+	private List<Process> processMining = new ArrayList<>();
 	private Map<String, IPoolApi> allPools = new HashMap<>();
 	private Set<String> listAlg;
 
@@ -58,7 +61,7 @@ public class MinerProcess {
 	private ConfigUserBean configUserBean;
 	private Set<RevenueBean> revenueBeans = new HashSet<>();
 	private boolean bending;
-	
+
 	private Long benTimeEnd;
 
 	boolean stop = false;
@@ -74,369 +77,323 @@ public class MinerProcess {
 		executorCheckHashRate = Executors.newFixedThreadPool(2);
 		futureTaskPools = new ArrayList<>();
 		listAlg = new HashSet<>();
+		
+		Thread Thread = new Thread(()->{ 
+			try {
+				java.lang.Thread.sleep(200);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+            System.out.println("Shouting down ...");
+			runing.parallelStream().forEach((miner) -> {
+				try {
+					miner.destroy();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+			
+			processBenchmarking.parallelStream().forEach((process) ->{
+				try {
+					process.destroy();
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+			processMining.parallelStream().forEach((process) ->{
+				try {
+					process.destroy();
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+		}, "Shutdown-thread");
+		Runtime.getRuntime().addShutdownHook(Thread );
+//		Runtime.getRuntime().ex
 	}
 
 	public void start() {
+		try {
 
-		mapPoolApi.put("yaamp", YaampPool.class);
-		mapAppMiner.put("ccminer", CcminerAppMiner.class);
+			mapPoolApi.put("yaamp", YaampPool.class);
+			mapAppMiner.put("ccminer", CcminerAppMiner.class);
 
-		do {
-
-			// load config
-
-			// FutureTask<Boolean> futureTaskConfig = new FutureTask<>(() -> {
-			loadConfig();
-
-			for (ConfigPoolBean configPoolBean : configPoolBeans) {
-				if (allPools.containsKey(configPoolBean.getName())) {
-					IPoolApi iPoolApi = allPools.get(configPoolBean.getName());
-					iPoolApi.setConfigPoolBean(configPoolBean);
-					continue;
-				}
-				String poolType = configPoolBean.getPoolType();
-				Class<? extends IPoolApi> classPoolApi = mapPoolApi.get(poolType);
+			do {
 				try {
-					IPoolApi poolApi = classPoolApi.newInstance();
-					poolApi.setConfigPoolBean(configPoolBean);
-					allPools.put(configPoolBean.getName(), poolApi);
-				} catch (InstantiationException | IllegalAccessException e) {
-					e.printStackTrace();
-				}
-			}
 
-			for (ConfigMinerBean configMinerBean : configMinerBeans) {
-				if (allMiners.containsKey(configMinerBean.getMinerName())) {
-					IAppMiner iAppMiner = allMiners.get(configMinerBean.getMinerName());
-					iAppMiner.setConfigMinerBean(configMinerBean);
-					continue;
-				}
-				String appMinerType = configMinerBean.getAppMinerType();
+					// load config
 
-				Class<? extends IAppMiner> classIAppMiner = mapAppMiner.get(appMinerType);
-				try {
-					IAppMiner appMiner = classIAppMiner.newInstance();
-					appMiner.setConfigMinerBean(configMinerBean);
-					allMiners.put(configMinerBean.getMinerName(), appMiner);
-					for (String alg : configMinerBean.getAlg()) {
+					// FutureTask<Boolean> futureTaskConfig = new FutureTask<>(() -> {
+					loadConfig();
+
+					for (ConfigPoolBean configPoolBean : configPoolBeans) {
+						if (allPools.containsKey(configPoolBean.getName())) {
+							IPoolApi iPoolApi = allPools.get(configPoolBean.getName());
+							iPoolApi.setConfigPoolBean(configPoolBean);
+							continue;
+						}
+						String poolType = configPoolBean.getPoolType();
+						Class<? extends IPoolApi> classPoolApi = mapPoolApi.get(poolType);
+						try {
+							IPoolApi poolApi = classPoolApi.newInstance();
+							poolApi.setConfigPoolBean(configPoolBean);
+							allPools.put(configPoolBean.getName(), poolApi);
+						} catch (InstantiationException | IllegalAccessException e) {
+							e.printStackTrace();
+						}
+					}
+
+					for (ConfigMinerBean configMinerBean : configMinerBeans) {
+						if (allMiners.containsKey(configMinerBean.getMinerName())) {
+							IAppMiner iAppMiner = allMiners.get(configMinerBean.getMinerName());
+							iAppMiner.setConfigMinerBean(configMinerBean);
+							continue;
+						}
+						String appMinerType = configMinerBean.getAppMinerType();
+
+						Class<? extends IAppMiner> classIAppMiner = mapAppMiner.get(appMinerType);
+						try {
+							IAppMiner appMiner = classIAppMiner.newInstance();
+							appMiner.setConfigMinerBean(configMinerBean);
+							allMiners.put(configMinerBean.getMinerName(), appMiner);
+							for (String alg : configMinerBean.getAlg()) {
+								Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
+								if (appMiners == null) {
+									appMiners = new HashSet<>();
+									mapAlgAppMiner.put(alg, appMiners);
+								}
+								appMiners.add(appMiner);
+							}
+
+							// mapAlgAppMiner.put
+						} catch (InstantiationException | IllegalAccessException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+
+					}
+					// return null;
+					// });
+					// execMain.execute(futureTaskConfig);
+
+					// endload config
+
+					// Callable<String> callable = new Callable<String>() {
+					//
+					// @Override
+					// public String call() throws Exception {
+					// // TODO Auto-generated method stub
+					// return null;
+					// }
+					// };
+
+					allPools.values().stream().forEach((IPoolApi iPoolApi) -> {
+						FutureTask<Boolean> futureTaskPool = new FutureTask<>(() -> {
+							Boolean check = iPoolApi.checkRate();
+							listAlg.addAll(iPoolApi.getAlg());
+							for (String alg : iPoolApi.getAlg()) {
+								Set<IPoolApi> iPoolApis = mapAlgPoolApi.get(alg);
+								if (iPoolApis == null) {
+									iPoolApis = new HashSet<>();
+									mapAlgPoolApi.put(alg, iPoolApis);
+								}
+								iPoolApis.add(iPoolApi);
+							}
+							return check;
+						});
+						futureTaskPools.add(futureTaskPool);
+						executorPool.execute(futureTaskPool);
+					});
+
+					// call data pool
+
+					// call data pool
+
+					// for (IPoolApi iPoolApi : allPools) {
+					//
+					// FutureTask<Boolean> futureTask = new FutureTask<>(() -> {
+					// Boolean check = iPoolApi.checkRate();
+					// listAlg.addAll(iPoolApi.getAlg());
+					// for (String alg : iPoolApi.getAlg()) {
+					// Set<IPoolApi> iPoolApis = mapAlgPoolApi.get(alg);
+					// if (iPoolApis == null) {
+					// iPoolApis = new HashSet<>();
+					// mapAlgPoolApi.put(alg, iPoolApis);
+					// }
+					// iPoolApis.add(iPoolApi);
+					// }
+					// return check;
+					// });
+					//
+					// executorPool.execute(futureTask);
+					// }
+
+					// futureTask.isDone();
+
+					// download miner
+					listAlg.stream().forEach((String alg) -> {
 						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-						if (appMiners == null) {
-							appMiners = new HashSet<>();
-							mapAlgAppMiner.put(alg, appMiners);
-						}
-						appMiners.add(appMiner);
-					}
-
-					// mapAlgAppMiner.put
-				} catch (InstantiationException | IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-			// return null;
-			// });
-			// execMain.execute(futureTaskConfig);
-
-			// endload config
-
-			// Callable<String> callable = new Callable<String>() {
-			//
-			// @Override
-			// public String call() throws Exception {
-			// // TODO Auto-generated method stub
-			// return null;
-			// }
-			// };
-
-			allPools.values().stream().forEach((IPoolApi iPoolApi) -> {
-				FutureTask<Boolean> futureTaskPool = new FutureTask<>(() -> {
-					Boolean check = iPoolApi.checkRate();
-					listAlg.addAll(iPoolApi.getAlg());
-					for (String alg : iPoolApi.getAlg()) {
-						Set<IPoolApi> iPoolApis = mapAlgPoolApi.get(alg);
-						if (iPoolApis == null) {
-							iPoolApis = new HashSet<>();
-							mapAlgPoolApi.put(alg, iPoolApis);
-						}
-						iPoolApis.add(iPoolApi);
-					}
-					return check;
-				});
-				futureTaskPools.add(futureTaskPool);
-				executorPool.execute(futureTaskPool);
-			});
-
-			// call data pool
-
-			// call data pool
-
-			// for (IPoolApi iPoolApi : allPools) {
-			//
-			// FutureTask<Boolean> futureTask = new FutureTask<>(() -> {
-			// Boolean check = iPoolApi.checkRate();
-			// listAlg.addAll(iPoolApi.getAlg());
-			// for (String alg : iPoolApi.getAlg()) {
-			// Set<IPoolApi> iPoolApis = mapAlgPoolApi.get(alg);
-			// if (iPoolApis == null) {
-			// iPoolApis = new HashSet<>();
-			// mapAlgPoolApi.put(alg, iPoolApis);
-			// }
-			// iPoolApis.add(iPoolApi);
-			// }
-			// return check;
-			// });
-			//
-			// executorPool.execute(futureTask);
-			// }
-
-			// futureTask.isDone();
-
-			// download miner
-			listAlg.stream().forEach((String alg) -> {
-				Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-				if (appMiners == null)
-					return;
-				appMiners.parallelStream().filter((appMiner) -> !appMiner.hasDownloaded()).forEach((appMiner) -> {
-					FutureTask<Boolean> futureTaskDownload = new FutureTask<>(() -> {
-						DownloadUtils.download(appMiner.getConfigMinerBean().getUrlDownload(), "./miner/" + appMiner.getConfigMinerBean().getMinerName());
-						return null;
-					});
-					executorDownload.execute(futureTaskDownload);
-				});
-			});
-
-			// download miner
-
-			// main controler
-
-			listAlg.stream().forEach((String alg) -> {
-				Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-				if (appMiners == null)
-					return;
-				if (appMiners.parallelStream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).count() > 0) {
-					bending = true;
-					runing.stream().filter((miner) -> !miner.isBendIng()).forEach((miner) -> {
-						miner.destroy();
-					});
-				}
-				
-				runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).forEach((miner)->{
-					if(benTimeEnd >Calendar.getInstance().getTimeInMillis()) {
-						miner.destroy();
-						bending = false;
-					}
-					
-				});
-
-				if (runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).count() == 0) {
-					appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).forEach((appMiner) -> {
-						Set<IPoolApi> apis = mapAlgPoolApi.get(alg);
-						if (apis == null)
+						if (appMiners == null)
 							return;
-						apis.forEach((api) -> {
-							if (appMiner.getHashRate(alg) != null)
-								return;
-							Map<String, Object> root = new HashMap<>();
-							try {
-								root.put("pool", api);
-								root.put("user", configUserBean);
-								root.put("alg", alg);
-								Map context = Ognl.createDefaultContext(root, mem);
-								String host = (String) Ognl.getValue(api.getConfigPoolBean().getHostFormat(), context, root, String.class);
-								String port = (String) Ognl.getValue(api.getConfigPoolBean().getPortFormat(), context, root, String.class);
-								String user = (String) Ognl.getValue(api.getConfigPoolBean().getUserFormat(), context, root, String.class);
-								String password = (String) Ognl.getValue(api.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
+						appMiners.parallelStream().filter((appMiner) -> !appMiner.hasDownloaded()).forEach((appMiner) -> {
+							FutureTask<Boolean> futureTaskDownload = new FutureTask<>(() -> {
+								DownloadUtils.download(appMiner.getConfigMinerBean().getUrlDownload(), "./miner/" + appMiner.getConfigMinerBean().getMinerName());
+								return null;
+							});
+							executorDownload.execute(futureTaskDownload);
+						});
+					});
 
-								appMiner.run(alg, host, port, user, password);
-								appMiner.setBendIng(true);
-								runing.add(appMiner);
-								benTimeEnd = Calendar.getInstance().getTimeInMillis()+3600;
-								// appMiner.check();
-							} catch (OgnlException e) {
-								// TODO
-								// Auto-generated
-								// catch block
-								e.printStackTrace();
+					// download miner
+
+					// main controler
+
+					listAlg.stream().forEach((String alg) -> {
+						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
+						if (appMiners == null)
+							return;
+						if (appMiners.parallelStream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).count() > 0) {
+							bending = true;
+							runing.stream().filter((miner) -> !miner.isBendIng()).forEach((miner) -> {
+								miner.destroy();
+							});
+						}
+
+						runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).forEach((miner) -> {
+							if (benTimeEnd > Calendar.getInstance().getTimeInMillis()) {
+								miner.destroy();
+								bending = false;
 							}
 
 						});
 
+						if (runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).count() == 0) {
+							appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).forEach((appMiner) -> {
+								if(processBenchmarking.size()>=1)
+									return;
+								Set<IPoolApi> apis = mapAlgPoolApi.get(alg);
+								if (apis == null)
+									return;
+								apis.forEach((api) -> {
+									if (appMiner.getHashRate(alg) != null)
+										return;
+									Map<String, Object> root = new HashMap<>();
+									try {
+										root.put("pool", api);
+										root.put("user", configUserBean);
+										root.put("alg", alg);
+										Map context = Ognl.createDefaultContext(root, mem);
+										String host = (String) Ognl.getValue(api.getConfigPoolBean().getHostFormat(), context, root, String.class);
+										String port = (String) Ognl.getValue(api.getConfigPoolBean().getPortFormat(), context, root, String.class);
+										String user = (String) Ognl.getValue(api.getConfigPoolBean().getUserFormat(), context, root, String.class);
+										String password = (String) Ognl.getValue(api.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
+										
+										processBenchmarking.add(appMiner.run(alg, host, port, user, password));
+										appMiner.setBendIng(true);
+										runing.add(appMiner);
+										benTimeEnd = Calendar.getInstance().getTimeInMillis() + 3600;
+										// appMiner.check();
+									} catch (OgnlException e) {
+										// TODO
+										// Auto-generated
+										// catch block
+										e.printStackTrace();
+									}
+
+								});
+
+							});
+						}
+
 					});
-				}
 
-				
+					// cal
+					listAlg.stream().forEach((String alg) -> {
+						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
+						if (appMiners == null)
+							return;
+						appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) != null).forEach((appMiner) -> {
+							Set<IPoolApi> poolapis = mapAlgPoolApi.get(alg);
+							if (poolapis == null)
+								return;
+							poolapis.forEach((pool) -> {
+								HashRate hashRate = appMiner.getHashRate(alg);
+								RatePrice price = pool.getMapRatePrices().get(alg);
+								RevenueBean revenueBean = new RevenueBean();
+								revenueBean.setAlg(alg);
+								revenueBean.setPool(pool);
+								revenueBean.setMiner(appMiner);
+								revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
+								revenueBeans.add(revenueBean);
+							});
 
-			});
-			
-//			cal
-			listAlg.stream().forEach((String alg) -> {
-				Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-				if (appMiners == null)
-					return;
-				appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) != null).forEach((appMiner) -> {
-					Set<IPoolApi> poolapis = mapAlgPoolApi.get(alg);
-					if (poolapis == null)
-						return;
-					poolapis.forEach((pool) -> {
-						HashRate hashRate = appMiner.getHashRate(alg);
-						RatePrice price = pool.getMapRatePrices().get(alg);
-						RevenueBean revenueBean = new RevenueBean();
-						revenueBean.setAlg(alg);
-						revenueBean.setPool(pool);
-						revenueBean.setMiner(appMiner);
-						revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
-						revenueBeans.add(revenueBean);
+						});
 					});
 
-				});
-			});
-			
-//			cal
-			
-			
-			
-			// main controler
+					// cal
 
-			if (!bending) {
-				RevenueBean revenueTopBean = revenueBeans.stream().sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().get();
+					// main controler
 
-				Map<String, Object> root = new HashMap<>();
-				try {
-					IPoolApi pool = revenueTopBean.getPool();
-					IAppMiner appMiner = revenueTopBean.getMiner();
-					root.put("pool", pool);
-					root.put("user", configUserBean);
-					root.put("alg", revenueTopBean.getAlg());
-					Map context = Ognl.createDefaultContext(root, mem);
-					String host = (String) Ognl.getValue(pool.getConfigPoolBean().getHostFormat(), context, root, String.class);
-					String port = (String) Ognl.getValue(pool.getConfigPoolBean().getPortFormat(), context, root, String.class);
-					String user = (String) Ognl.getValue(pool.getConfigPoolBean().getUserFormat(), context, root, String.class);
-					String password = (String) Ognl.getValue(pool.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
+					if (!bending) {
+//						RevenueBean revenueTopBean = revenueBeans.stream().filter((rev) -> rev.getPrice() != null).sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().get();
+//
+//						Map<String, Object> root = new HashMap<>();
+//						try {
+//							IPoolApi pool = revenueTopBean.getPool();
+//							IAppMiner appMiner = revenueTopBean.getMiner();
+//							root.put("pool", pool);
+//							root.put("user", configUserBean);
+//							root.put("alg", revenueTopBean.getAlg());
+//							Map context = Ognl.createDefaultContext(root, mem);
+//							String host = (String) Ognl.getValue(pool.getConfigPoolBean().getHostFormat(), context, root, String.class);
+//							String port = (String) Ognl.getValue(pool.getConfigPoolBean().getPortFormat(), context, root, String.class);
+//							String user = (String) Ognl.getValue(pool.getConfigPoolBean().getUserFormat(), context, root, String.class);
+//							String password = (String) Ognl.getValue(pool.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
+//
+//							processMining.add(appMiner.run(revenueTopBean.getAlg(), host, port, user, password));
+//							appMiner.setBendIng(false);
+//							runing.add(appMiner);
+//						} catch (OgnlException e) {
+//							e.printStackTrace();
+//						}
+					} else {
 
-					appMiner.run(revenueTopBean.getAlg(), host, port, user, password);
-					appMiner.setBendIng(false);
-					runing.add(appMiner);
-				} catch (OgnlException e) {
+					}
+
+					runing.parallelStream().forEach((miner) -> {
+						if (miner.isRun()) {
+							miner.check();
+						}
+
+					});
+					for (FutureTask<Boolean> futureTask : futureTaskPools) {
+						try {
+							futureTask.get();
+						} catch (InterruptedException | ExecutionException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
 					e.printStackTrace();
+					// runing.
+					// TODO: handle exception
 				}
-			} else {
 
-			}
+			} while (!stop);
+		} finally {
 
-			// try {
-			// Thread.sleep(1000);
-			// } catch (InterruptedException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
 			runing.parallelStream().forEach((miner) -> {
-				if (miner.isRun()) {
-					miner.check();
-				}
-
-			});
-			// Object root = null;
-			// MemberAccess securityMemberAccess = new
-			// MemberAccess(allowStaticMethodAccess);
-			// Map context = Ognl.createDefaultContext(root);
-			// try {
-			// Object s = Ognl.getValue("top", context, root, String.class);
-			// } catch (OgnlException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
-			// TODO Auto-generated method stub
-
-			// check miner
-			// for (Entry<String, List<IMiner>> allMiner : allMiners.entrySet()) {
-			//
-			// for (IMiner miner : allMiner.getValue()) {
-			// if(!miner.hasBenched()){
-			// miner.bench();
-			// }
-			// }
-			//
-			// }
-
-			// Compar Price
-
-			// for (IPool pool : allPools) {
-			//
-			//
-			// List<RatePrice> ratePrices = pool.getRatePrices();
-			// for (RatePrice ratePrice : ratePrices) {
-			// List<IAppMiner> miners = allMiners.get(ratePrice.getAlg());
-			//
-			// miners.sort(compareHashRateMiner);
-			// CompareMiner compareMiner = new CompareMiner(pool,miners.get(0));
-			// compares.add(compareMiner);
-			// }
-			//
-			//
-			//// IMiner miner = allMiners.get(ratePrice.getAlg());
-			//// ratePrice.calPrice(miner.getHashRate());
-			// }
-			//
-			// List<MinerRun> minerRuns = new ArrayList<>();
-			//
-			// for (MinerRun minerRun : minerRuns) {
-			// IPoolApi pool = minerRun.getPool();
-			// IAppMiner miner = minerRun.getMiner();
-			// Map<String, Object> root = new HashMap<>();
-			// root.put("pool", pool);
-			// root.put("miner", miner);
-			// root.put("alg", minerRun.getAlg());
-			//
-			// Map context = Ognl.createDefaultContext(root, mem);
-			// try {
-			// Object s = Ognl.getValue("top", context, root, String.class);
-			// System.out.println(s);
-			// } catch (OgnlException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
-			// // miner.run(host, port, user, password);
-			// }
-			//
-			// Map<String, Object> root = new HashMap<>();
-			// root.put("top", "wefwefwe");
-			//
-			// Map context = Ognl.createDefaultContext(root, mem);
-			// try {
-			// Object s = Ognl.getValue("top", context, root, String.class);
-			// System.out.println(s);
-			// } catch (OgnlException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
-
-			// compares.sort(compareMiner);
-			// compares.get(0);
-
-			// check miner
-			// for (IAppMiner miner : runing) {
-			// if(miner.isRun()){
-			// HashRate hashRate = miner.getHashRate();
-			// }else{
-			//
-			// }
-			// }
-
-			// FutureTask<BigDecimal> futureTask = new FutureTask<>(callable);
-
-			// executor.execute(futureTask);
-			// wait
-			for (FutureTask<Boolean> futureTask : futureTaskPools) {
 				try {
-					futureTask.get();
-				} catch (InterruptedException | ExecutionException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					miner.destroy();
+				} catch (Exception e) {
+					// TODO: handle exception
 				}
-			}
+			});
 
-		} while (!stop);
+		}
 	}
 
 	private MemberAccess mem = new MemberAccess() {
@@ -469,13 +426,176 @@ public class MinerProcess {
 			configMinerBeans = new ArrayList<ConfigMinerBean>();
 			ConfigMinerBean configMinerBean = new ConfigMinerBean();
 			Set<String> alg = new HashSet<String>();
+			alg.add("bitcore");
+			alg.add("blake2s");
+			alg.add("blakecoin");
+			alg.add("vanilla");
+			alg.add("c11");
+			alg.add("cryptonight");
+			alg.add("decred");
+			alg.add("equihash");
+			// alg.add("ethash");
+			alg.add("groestl");
+			alg.add("hmq1725");
+			alg.add("jha");
+			alg.add("keccak");
+			alg.add("lbry");
+			alg.add("lyra2v2");
+			alg.add("lyra2z");
+			alg.add("myr-gr");
 			alg.add("neoscrypt");
+			alg.add("nist5");
+			alg.add("pascal");
+			alg.add("quark");
+			alg.add("qubit");
+			alg.add("scrypt");
+			alg.add("sia");
+			alg.add("sib");
+			alg.add("skein");
+			alg.add("skunk");
+			alg.add("timetravel");
+			alg.add("tribus");
+			alg.add("veltor");
+			alg.add("x11");
+			alg.add("x11evo");
+			// alg.add("x17");
+			alg.add("yescrypt");
 			configMinerBean.setAlg(alg);
 			configMinerBean.setAppMinerType("ccminer");
 			configMinerBean.setMinerName("TPruvot");
 			configMinerBean.setProgame("ccminer-X64.exe");
 			configMinerBean.setUrlDownload("https://github.com/tpruvot/ccminer/releases/download/v2.2-tpruvot/ccminer-x64-2.2.7z");
 			configMinerBeans.add(configMinerBean);
+
+			configMinerBean = new ConfigMinerBean();
+			alg = new HashSet<String>();
+			// alg.add("bitcore");
+			// alg.add("blake2s");
+			// alg.add("blakecoin");
+			// alg.add("vanilla");
+			// alg.add("c11");
+			// alg.add("cryptonight");
+			// alg.add("decred");
+			// alg.add("equihash");
+			// alg.add("ethash");
+			// alg.add("groestl");
+			// alg.add("hmq1725");
+			// alg.add("jha");
+			// alg.add("keccak");
+			// alg.add("lbry");
+			// alg.add("lyra2v2");
+			// alg.add("lyra2z");
+			// alg.add("myr-gr");
+			// alg.add("neoscrypt");
+			// alg.add("nist5");
+			// alg.add("pascal");
+			// alg.add("quark");
+			// alg.add("qubit");
+			// alg.add("scrypt");
+			// alg.add("sia");
+			// alg.add("sib");
+			// alg.add("skein");
+			alg.add("skunk");
+			// alg.add("timetravel");
+			// alg.add("tribus");
+			// alg.add("veltor");
+			// alg.add("x11");
+			// alg.add("x11evo");
+			// alg.add("x17");
+			// alg.add("yescrypt");
+			configMinerBean.setAlg(alg);
+			configMinerBean.setAppMinerType("ccminer");
+			configMinerBean.setMinerName("Skunk");
+			configMinerBean.setProgame("ccminer.exe");
+			configMinerBean.setUrlDownload("https://github.com/scaras/ccminer-2.2-mod-r1/releases/download/2.2-r1/2.2-mod-r1.zip");
+			configMinerBeans.add(configMinerBean);
+
+			configMinerBean = new ConfigMinerBean();
+			alg = new HashSet<String>();
+			// alg.add("bitcore");
+			// alg.add("blake2s");
+			// alg.add("blakecoin");
+			// alg.add("vanilla");
+			// alg.add("c11");
+			// alg.add("cryptonight");
+			// alg.add("decred");
+			// alg.add("equihash");
+			// alg.add("ethash");
+			// alg.add("groestl");
+			// alg.add("hmq1725");
+			// alg.add("jha");
+			// alg.add("keccak");
+			// alg.add("lbry");
+			// alg.add("lyra2v2");
+			// alg.add("lyra2z");
+			// alg.add("myr-gr");
+			// alg.add("neoscrypt");
+			// alg.add("nist5");
+			// alg.add("pascal");
+			// alg.add("quark");
+			// alg.add("qubit");
+			// alg.add("scrypt");
+			// alg.add("sia");
+			alg.add("sib");
+			// alg.add("skein");
+			// alg.add("skunk");
+			// alg.add("timetravel");
+			// alg.add("tribus");
+			// alg.add("veltor");
+			// alg.add("x11");
+			// alg.add("x11evo");
+			// alg.add("x17");
+			// alg.add("yescrypt");
+			configMinerBean.setAlg(alg);
+			configMinerBean.setAppMinerType("ccminer");
+			configMinerBean.setMinerName("Skunk");
+			configMinerBean.setProgame("ccminer_x11gost.exe");
+			configMinerBean.setUrlDownload("https://github.com/nicehash/ccminer-x11gost/releases/download/ccminer-x11gost_windows/ccminer_x11gost.7z");
+			configMinerBeans.add(configMinerBean);
+
+			configMinerBean = new ConfigMinerBean();
+			alg = new HashSet<String>();
+			// alg.add("bitcore");
+			alg.add("blake2s");
+			alg.add("blakecoin");
+			// alg.add("vanilla");
+			// alg.add("c11");
+			// alg.add("cryptonight");
+			// alg.add("decred");
+			// alg.add("equihash");
+			// alg.add("ethash");
+			// alg.add("groestl");
+			// alg.add("hmq1725");
+			// alg.add("jha");
+			alg.add("keccak");
+			alg.add("lbry");
+			alg.add("lyra2v2");
+			// alg.add("lyra2z");
+			alg.add("myr-gr");
+			// alg.add("neoscrypt");
+			alg.add("nist5");
+			// alg.add("pascal");
+			// alg.add("quark");
+			// alg.add("qubit");
+			// alg.add("scrypt");
+			// alg.add("sia");
+			alg.add("sib");
+			alg.add("skein");
+			// alg.add("skunk");
+			// alg.add("timetravel");
+			// alg.add("tribus");
+			alg.add("veltor");
+			// alg.add("x11");
+			alg.add("x11evo");
+			alg.add("x17");
+			// alg.add("yescrypt");
+			configMinerBean.setAlg(alg);
+			configMinerBean.setAppMinerType("ccminer");
+			configMinerBean.setMinerName("Palgin");
+			configMinerBean.setProgame("ccminer.exe");
+			configMinerBean.setUrlDownload("https://github.com/palginpav/ccminer/releases/download/1.1.1/palginmod_1.1_x64.zip");
+			configMinerBeans.add(configMinerBean);
+
 			configMiner.saveConfigMiner(configMinerBeans);
 		}
 
@@ -488,6 +608,17 @@ public class MinerProcess {
 			configPoolBean.setName("zpool");
 			configPoolBean.setPoolType("yaamp");
 			configPoolBean.setHostFormat("pool.data[alg].name+\"mine.zpool.ca\"");
+			configPoolBean.setUserFormat("user.btcAddress");
+			configPoolBean.setPortFormat("pool.data[alg].port");
+			configPoolBean.setPasswordFormat("user.workerName+\",c=BTC\"");
+			configPoolBeans.add(configPoolBean);
+
+			configPoolBean = new ConfigPoolBean();
+
+			configPoolBean.setPoolApi("http://pool.hashrefinery.com/api/status");
+			configPoolBean.setName("hashrefinery");
+			configPoolBean.setPoolType("yaamp");
+			configPoolBean.setHostFormat("pool.data[alg].name+\"us.hashrefinery.com\"");
 			configPoolBean.setUserFormat("user.btcAddress");
 			configPoolBean.setPortFormat("pool.data[alg].port");
 			configPoolBean.setPasswordFormat("user.workerName+\",c=BTC\"");
@@ -512,6 +643,12 @@ public class MinerProcess {
 		//// list.add(new CcminerAppMiner());
 		// allMiners.put("", list );
 		// allPools.add(new YaampPool("http://www.zpool.ca/api/status"));
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		start();
 	}
 
 	// private Comparator<IAppMiner> compareHashRateMiner =new
