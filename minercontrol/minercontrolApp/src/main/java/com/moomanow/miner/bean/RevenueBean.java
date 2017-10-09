@@ -41,8 +41,8 @@ public class RevenueBean {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((alg == null) ? 0 : alg.hashCode());
-		result = prime * result + ((miner == null) ? 0 : miner.hashCode());
-		result = prime * result + ((pool == null) ? 0 : pool.hashCode());
+		result = prime * result + ((miner == null||miner.getConfigMinerBean()==null||miner.getConfigMinerBean().getMinerName()==null) ? 0 : miner.getConfigMinerBean().getMinerName().hashCode());
+		result = prime * result + ((pool == null||pool.getConfigPoolBean()==null||pool.getConfigPoolBean().getName()==null) ? 0 : pool.getConfigPoolBean().getName().hashCode());
 		return result;
 	}
 	@Override
@@ -59,15 +59,15 @@ public class RevenueBean {
 				return false;
 		} else if (!alg.equals(other.alg))
 			return false;
-		if (miner == null) {
-			if (other.miner != null)
+		if (miner == null||miner.getConfigMinerBean()==null||miner.getConfigMinerBean().getMinerName()==null) {
+			if (!(other.miner == null||other.miner.getConfigMinerBean()==null||other.miner.getConfigMinerBean().getMinerName()==null))
 				return false;
-		} else if (!miner.equals(other.miner))
+		} else if (!miner.getConfigMinerBean().getMinerName().equals(other.miner.getConfigMinerBean().getMinerName()))
 			return false;
-		if (pool == null) {
-			if (other.pool != null)
+		if (pool == null||pool.getConfigPoolBean()==null||pool.getConfigPoolBean().getName()==null) {
+			if (!(other.pool == null||other.pool.getConfigPoolBean()==null||other.pool.getConfigPoolBean().getName()==null))
 				return false;
-		} else if (!pool.equals(other.pool))
+		} else if (!pool.getConfigPoolBean().getName().equals(other.pool.getConfigPoolBean().getName()))
 			return false;
 		return true;
 	}

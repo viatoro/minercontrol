@@ -9,6 +9,7 @@ public interface IAppMiner {
 	public void init();
 	public boolean isRun();
 	public HashRate getHashRate(String alg);
+	public HashRate getHashRateBenchmarked(String alg);
 	public void check();
 	public Process run(String alg, String host, String port, String user, String password);
 	public void destroy();
@@ -16,5 +17,7 @@ public interface IAppMiner {
 	public ConfigMinerBean getConfigMinerBean();
 	public boolean isBendIng();
 	public void setBendIng(boolean b);
+	public boolean stopBench();
+	public Long getTimeStartLong();
 
 }

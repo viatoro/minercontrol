@@ -3,26 +3,22 @@ package com.moomanow.miner;
 import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Collections;
+//import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
-import java.util.function.Consumer;
 
-import com.moomanow.miner.api.miner.IMinerReaderApi;
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.api.pool.impl.YaampPool;
 import com.moomanow.miner.appminer.IAppMiner;
 import com.moomanow.miner.appminer.impl.CcminerAppMiner;
-import com.moomanow.miner.bean.CompareMiner;
 import com.moomanow.miner.bean.HashRate;
 import com.moomanow.miner.bean.RatePrice;
 import com.moomanow.miner.bean.RevenueBean;
@@ -41,25 +37,25 @@ public class MinerProcess implements Runnable {
 
 	// private Map<String,List<IAppMiner>> allMiners = new
 	// HashMap<String,List<IAppMiner>>();
-	private Map<String, IAppMiner> allMiners = new HashMap<>();
-	private List<IAppMiner> runing = new ArrayList<>();
+	private Map<String, IAppMiner> allMiners = new ConcurrentHashMap<>();
+	private Map<RevenueBean,IAppMiner> runing = new ConcurrentHashMap<>();
 	
 	private List<Process> processBenchmarking = new ArrayList<>();
 	private List<Process> processMining = new ArrayList<>();
-	private Map<String, IPoolApi> allPools = new HashMap<>();
-	private Set<String> listAlg;
+	private Map<String, IPoolApi> allPools = new ConcurrentHashMap<>();
+	private Set<String> listAlg = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	private Map<String, Class<? extends IPoolApi>> mapPoolApi = new HashMap<>();
+	private Map<String, Class<? extends IPoolApi>> mapPoolApi = new ConcurrentHashMap<>();
 
-	private Map<String, Class<? extends IAppMiner>> mapAppMiner = new HashMap<>();
+	private Map<String, Class<? extends IAppMiner>> mapAppMiner = new ConcurrentHashMap<>();
 
-	private Map<String, Set<IAppMiner>> mapAlgAppMiner = new HashMap<>();
-	private Map<String, Set<IPoolApi>> mapAlgPoolApi = new HashMap<>();
+	private Map<String, Set<IAppMiner>> mapAlgAppMiner = new ConcurrentHashMap<>();
+	private Map<String, Set<IPoolApi>> mapAlgPoolApi = new ConcurrentHashMap<>();
 
 	private List<ConfigMinerBean> configMinerBeans;
 	private List<ConfigPoolBean> configPoolBeans;
 	private ConfigUserBean configUserBean;
-	private Set<RevenueBean> revenueBeans = new HashSet<>();
+	private Set<RevenueBean> revenueBeans = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private boolean bending;
 
 	private Long benTimeEnd;
@@ -68,15 +64,17 @@ public class MinerProcess implements Runnable {
 
 	private ExecutorService execMain, executorPool, executorDownload, executorCheckHashRate;
 
-	private List<FutureTask<Boolean>> futureTaskPools;
+	private Map<String,FutureTask<Boolean>> futureTaskPools= new ConcurrentHashMap<>();
+	
+	private Map<String,FutureTask<Boolean>> minerDoenloadIng = new ConcurrentHashMap<>();
 
 	public MinerProcess() {
 		execMain = Executors.newFixedThreadPool(2);
 		executorPool = Executors.newFixedThreadPool(2);
 		executorDownload = Executors.newFixedThreadPool(2);
 		executorCheckHashRate = Executors.newFixedThreadPool(2);
-		futureTaskPools = new ArrayList<>();
-		listAlg = new HashSet<>();
+//		futureTaskPools = new ArrayList<>();
+//		listAlg = Collections.newSetFromMap(new ConcurrentHashMap<>());
 		
 		Thread Thread = new Thread(()->{ 
 			try {
@@ -86,9 +84,9 @@ public class MinerProcess implements Runnable {
 				e1.printStackTrace();
 			}
             System.out.println("Shouting down ...");
-			runing.parallelStream().forEach((miner) -> {
+			runing.entrySet().parallelStream().forEach((miner) -> {
 				try {
-					miner.destroy();
+					miner.getValue().destroy();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -110,7 +108,6 @@ public class MinerProcess implements Runnable {
 			});
 		}, "Shutdown-thread");
 		Runtime.getRuntime().addShutdownHook(Thread );
-//		Runtime.getRuntime().ex
 	}
 
 	public void start() {
@@ -124,7 +121,6 @@ public class MinerProcess implements Runnable {
 
 					// load config
 
-					// FutureTask<Boolean> futureTaskConfig = new FutureTask<>(() -> {
 					loadConfig();
 
 					for (ConfigPoolBean configPoolBean : configPoolBeans) {
@@ -166,30 +162,18 @@ public class MinerProcess implements Runnable {
 								appMiners.add(appMiner);
 							}
 
-							// mapAlgAppMiner.put
 						} catch (InstantiationException | IllegalAccessException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 
 					}
-					// return null;
-					// });
-					// execMain.execute(futureTaskConfig);
-
-					// endload config
-
-					// Callable<String> callable = new Callable<String>() {
-					//
-					// @Override
-					// public String call() throws Exception {
-					// // TODO Auto-generated method stub
-					// return null;
-					// }
-					// };
 
 					allPools.values().stream().forEach((IPoolApi iPoolApi) -> {
-						FutureTask<Boolean> futureTaskPool = new FutureTask<>(() -> {
+						String poolName = iPoolApi.getConfigPoolBean().getName();
+						FutureTask<Boolean> futureTaskPool = futureTaskPools.get(poolName);
+						if(futureTaskPool!=null&&!futureTaskPool.isDone())
+							return;
+						futureTaskPool = new FutureTask<>(() -> {
 							Boolean check = iPoolApi.checkRate();
 							listAlg.addAll(iPoolApi.getAlg());
 							for (String alg : iPoolApi.getAlg()) {
@@ -202,45 +186,23 @@ public class MinerProcess implements Runnable {
 							}
 							return check;
 						});
-						futureTaskPools.add(futureTaskPool);
+						futureTaskPools.put(poolName,futureTaskPool);
 						executorPool.execute(futureTaskPool);
 					});
 
 					// call data pool
-
-					// call data pool
-
-					// for (IPoolApi iPoolApi : allPools) {
-					//
-					// FutureTask<Boolean> futureTask = new FutureTask<>(() -> {
-					// Boolean check = iPoolApi.checkRate();
-					// listAlg.addAll(iPoolApi.getAlg());
-					// for (String alg : iPoolApi.getAlg()) {
-					// Set<IPoolApi> iPoolApis = mapAlgPoolApi.get(alg);
-					// if (iPoolApis == null) {
-					// iPoolApis = new HashSet<>();
-					// mapAlgPoolApi.put(alg, iPoolApis);
-					// }
-					// iPoolApis.add(iPoolApi);
-					// }
-					// return check;
-					// });
-					//
-					// executorPool.execute(futureTask);
-					// }
-
-					// futureTask.isDone();
 
 					// download miner
 					listAlg.stream().forEach((String alg) -> {
 						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
 						if (appMiners == null)
 							return;
-						appMiners.parallelStream().filter((appMiner) -> !appMiner.hasDownloaded()).forEach((appMiner) -> {
+						appMiners.parallelStream().filter((appMiner) -> !appMiner.hasDownloaded()&&!minerDoenloadIng.containsKey(appMiner.getConfigMinerBean().getMinerName())).forEach((appMiner) -> {
 							FutureTask<Boolean> futureTaskDownload = new FutureTask<>(() -> {
 								DownloadUtils.download(appMiner.getConfigMinerBean().getUrlDownload(), "./miner/" + appMiner.getConfigMinerBean().getMinerName());
 								return null;
 							});
+							minerDoenloadIng.put(appMiner.getConfigMinerBean().getMinerName(), futureTaskDownload);
 							executorDownload.execute(futureTaskDownload);
 						});
 					});
@@ -249,82 +211,25 @@ public class MinerProcess implements Runnable {
 
 					// main controler
 
-					listAlg.stream().forEach((String alg) -> {
-						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-						if (appMiners == null)
-							return;
-						if (appMiners.parallelStream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).count() > 0) {
-							bending = true;
-							runing.stream().filter((miner) -> !miner.isBendIng()).forEach((miner) -> {
-								miner.destroy();
-							});
-						}
-
-						runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).forEach((miner) -> {
-							if (benTimeEnd > Calendar.getInstance().getTimeInMillis()) {
-								miner.destroy();
-								bending = false;
-							}
-
-						});
-
-						if (runing.stream().filter((miner) -> miner.isBendIng() && miner.isRun()).count() == 0) {
-							appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) == null).forEach((appMiner) -> {
-								if(processBenchmarking.size()>=1)
-									return;
-								Set<IPoolApi> apis = mapAlgPoolApi.get(alg);
-								if (apis == null)
-									return;
-								apis.forEach((api) -> {
-									if (appMiner.getHashRate(alg) != null)
-										return;
-									Map<String, Object> root = new HashMap<>();
-									try {
-										root.put("pool", api);
-										root.put("user", configUserBean);
-										root.put("alg", alg);
-										Map context = Ognl.createDefaultContext(root, mem);
-										String host = (String) Ognl.getValue(api.getConfigPoolBean().getHostFormat(), context, root, String.class);
-										String port = (String) Ognl.getValue(api.getConfigPoolBean().getPortFormat(), context, root, String.class);
-										String user = (String) Ognl.getValue(api.getConfigPoolBean().getUserFormat(), context, root, String.class);
-										String password = (String) Ognl.getValue(api.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
-										
-										processBenchmarking.add(appMiner.run(alg, host, port, user, password));
-										appMiner.setBendIng(true);
-										runing.add(appMiner);
-										benTimeEnd = Calendar.getInstance().getTimeInMillis() + 3600;
-										// appMiner.check();
-									} catch (OgnlException e) {
-										// TODO
-										// Auto-generated
-										// catch block
-										e.printStackTrace();
-									}
-
-								});
-
-							});
-						}
-
-					});
-
 					// cal
 					listAlg.stream().forEach((String alg) -> {
 						Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
 						if (appMiners == null)
 							return;
-						appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded() && appMiner.getHashRate(alg) != null).forEach((appMiner) -> {
+						appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded()).forEach((appMiner) -> {
 							Set<IPoolApi> poolapis = mapAlgPoolApi.get(alg);
 							if (poolapis == null)
 								return;
 							poolapis.forEach((pool) -> {
-								HashRate hashRate = appMiner.getHashRate(alg);
+								HashRate hashRate = appMiner.getHashRateBenchmarked(alg);
 								RatePrice price = pool.getMapRatePrices().get(alg);
 								RevenueBean revenueBean = new RevenueBean();
 								revenueBean.setAlg(alg);
 								revenueBean.setPool(pool);
 								revenueBean.setMiner(appMiner);
-								revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
+								if(hashRate!=null) {
+									revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
+								}
 								revenueBeans.add(revenueBean);
 							});
 
@@ -334,67 +239,89 @@ public class MinerProcess implements Runnable {
 					// cal
 
 					// main controler
-
-					if (!bending) {
-//						RevenueBean revenueTopBean = revenueBeans.stream().filter((rev) -> rev.getPrice() != null).sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().get();
-//
-//						Map<String, Object> root = new HashMap<>();
-//						try {
-//							IPoolApi pool = revenueTopBean.getPool();
-//							IAppMiner appMiner = revenueTopBean.getMiner();
-//							root.put("pool", pool);
-//							root.put("user", configUserBean);
-//							root.put("alg", revenueTopBean.getAlg());
-//							Map context = Ognl.createDefaultContext(root, mem);
-//							String host = (String) Ognl.getValue(pool.getConfigPoolBean().getHostFormat(), context, root, String.class);
-//							String port = (String) Ognl.getValue(pool.getConfigPoolBean().getPortFormat(), context, root, String.class);
-//							String user = (String) Ognl.getValue(pool.getConfigPoolBean().getUserFormat(), context, root, String.class);
-//							String password = (String) Ognl.getValue(pool.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
-//
-//							processMining.add(appMiner.run(revenueTopBean.getAlg(), host, port, user, password));
-//							appMiner.setBendIng(false);
-//							runing.add(appMiner);
-//						} catch (OgnlException e) {
-//							e.printStackTrace();
-//						}
-					} else {
-
+					
+//					find non bench
+					RevenueBean revenueBean = revenueBeans.parallelStream().filter((rev)->rev.getPrice()==null).sorted().findFirst().get();
+					
+					
+//					cal mining
+					if (revenueBean==null) {
+						RevenueBean revenueBeanCheck = revenueBeans.stream().filter((rev) -> !runing.containsKey(rev)).sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().get();
+						long s = runing.keySet().parallelStream().filter((rev)->{
+							return rev.getPrice().compareTo(revenueBeanCheck.getPrice())==1;
+						}).count();
+						if(s==0) {
+							revenueBean = revenueBeanCheck;
+						}
 					}
 
-					runing.parallelStream().forEach((miner) -> {
-						if (miner.isRun()) {
-							miner.check();
-						}
-
-					});
-					for (FutureTask<Boolean> futureTask : futureTaskPools) {
+//					case switch new miner
+					if (revenueBean!=null&&!runing.containsKey(revenueBean)) {
+						runing.entrySet().removeIf((revenueBeanEntry) -> {
+							IAppMiner miner = revenueBeanEntry.getValue();
+							miner.destroy();
+							return true;
+						});
+						Map<String, Object> root = new ConcurrentHashMap<>();
 						try {
-							futureTask.get();
-						} catch (InterruptedException | ExecutionException e) {
-							// TODO Auto-generated catch block
+							IPoolApi pool = revenueBean.getPool();
+							IAppMiner appMiner = revenueBean.getMiner();
+							root.put("pool", pool);
+							root.put("user", configUserBean);
+							root.put("alg", revenueBean.getAlg());
+							Map context = Ognl.createDefaultContext(root, mem);
+							String host = (String) Ognl.getValue(pool.getConfigPoolBean().getHostFormat(), context, root, String.class);
+							String port = (String) Ognl.getValue(pool.getConfigPoolBean().getPortFormat(), context, root, String.class);
+							String user = (String) Ognl.getValue(pool.getConfigPoolBean().getUserFormat(), context, root, String.class);
+							String password = (String) Ognl.getValue(pool.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
+
+							processMining.add(appMiner.run(revenueBean.getAlg(), host, port, user, password));
+							appMiner.setBendIng(false);
+							runing.put(revenueBean, appMiner);
+						} catch (OgnlException e) {
 							e.printStackTrace();
 						}
 					}
 
+					
+					runing.entrySet().removeIf((revenueBeanEntry) -> {
+						IAppMiner miner = revenueBeanEntry.getValue();
+						RevenueBean revenueBeanCheck = revenueBeanEntry.getKey();
+						if(revenueBeanCheck.getPrice()==null&&miner.getTimeStartLong()-Calendar.getInstance().getTimeInMillis()>miner.getConfigMinerBean().getTotalTimeBenchSec()*1000) {
+							miner.stopBench();
+							return true;
+						}else {
+							if (miner.isRun()) {
+								miner.check();
+							}
+						}
+						return false;
+					});
+					
+					
+					Thread.sleep(10000);
+
 				} catch (Exception e) {
 					e.printStackTrace();
-					// runing.
-					// TODO: handle exception
 				}
 
 			} while (!stop);
-		} finally {
+		}catch (Exception e) {
+			// TODO: handle exception
+		} 
+		finally {
 
-			runing.parallelStream().forEach((miner) -> {
-				try {
-					miner.destroy();
-				} catch (Exception e) {
-					// TODO: handle exception
-				}
-			});
+//			runing.parallelStream().forEach((miner) -> {
+//				try {
+//					miner.destroy();
+//				} catch (Exception e) {
+//					// TODO: handle exception
+//				}
+//			});
 
 		}
 	}
+	
 
 	private MemberAccess mem = new MemberAccess() {
 

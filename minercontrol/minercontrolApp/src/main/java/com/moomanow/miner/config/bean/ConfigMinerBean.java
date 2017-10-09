@@ -10,6 +10,7 @@ public class ConfigMinerBean implements Serializable{
 	private Set<String> alg;
 	private String progame;
 	private String urlDownload;
+	private Long totalTimeBenchSec;
 	
 	public String getMinerName() {
 		return minerName;
@@ -41,6 +42,15 @@ public class ConfigMinerBean implements Serializable{
 	public void setAppMinerType(String appMinerType) {
 		this.appMinerType = appMinerType;
 	}
+	public Long getTotalTimeBenchSec() {
+		return totalTimeBenchSec;
+	}
+	public void setTotalTimeBenchSec(Long totalTimeBenchSec) {
+		this.totalTimeBenchSec = totalTimeBenchSec;
+	}
+	
+	
+	
 	
 	
 	

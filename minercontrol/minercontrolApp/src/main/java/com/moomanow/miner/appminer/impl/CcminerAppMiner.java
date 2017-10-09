@@ -12,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.SeekableByteChannel;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,12 +32,13 @@ public class CcminerAppMiner implements IAppMiner {
 
 	private Process process;
 	private String command;
-	private Map<String, HashRate> mapHashRate = new HashMap<>();
+	private Map<String, HashRate> mapHashRateRealTime = new HashMap<>();
 	private HashRateDao hashRateDao = new HashRateDaoImpl();
 	private ConfigMinerBean configMinerBean;
 	private String alg;
 	private boolean bendIng= false;
-
+	
+	private Long timeStartLong;
 
 	public CcminerAppMiner() {
 	}
@@ -62,7 +64,7 @@ public class CcminerAppMiner implements IAppMiner {
 
 	@Override
 	public HashRate getHashRate(String alg) {
-		return hashRateDao.findHashRate(configMinerBean.getMinerName(), alg);
+		return mapHashRateRealTime.get(alg);
 	}
 
 	@Override
@@ -71,17 +73,23 @@ public class CcminerAppMiner implements IAppMiner {
 		BigDecimal rate = apiReader.check();
 		if(rate==null)
 			return;
-		HashRate hashRate = mapHashRate.get(alg);
+		HashRate hashRate = mapHashRateRealTime.get(alg);
 		if(hashRate == null) {
 			hashRate = new HashRate();
-			mapHashRate.put(alg, hashRate);
+			mapHashRateRealTime.put(alg, hashRate);
 		}
 		hashRate .setRate(rate);
-		hashRateDao.saveHashRate(configMinerBean.getMinerName(), alg, hashRate);
+//		hashRateDao.saveHashRate(configMinerBean.getMinerName(), alg, hashRate);
 	}
-
-	public boolean hasBenched() {
-		return false;
+	
+	
+	@Override
+	public boolean stopBench() {
+		check();
+		HashRate hashRate = mapHashRateRealTime.get(alg);
+		hashRateDao.saveHashRate(configMinerBean.getMinerName(), alg, hashRate);
+		destroy();
+		return true;
 	}
 
 	public void bench() {
@@ -97,6 +105,7 @@ public class CcminerAppMiner implements IAppMiner {
 			command = "-a " + alg + " -o stratum+tcp://" + host + ":" + port + " -u " + user + " -p " + password;
 
 			Process process = runTime.exec("./miner/" + configMinerBean.getMinerName()+"/"+configMinerBean.getProgame() + " " + command);
+			timeStartLong = Calendar.getInstance().getTimeInMillis();
 			// process.destroy();
 			return process;
 		} catch (IOException e) {
@@ -127,6 +136,15 @@ public class CcminerAppMiner implements IAppMiner {
 	@Override
 	public void setBendIng(boolean bendIng) {
 		this.bendIng = bendIng;
+	}
+
+	@Override
+	public HashRate getHashRateBenchmarked(String alg) {
+		return hashRateDao.findHashRate(configMinerBean.getMinerName(), alg);
+	}
+	@Override
+	public Long getTimeStartLong() {
+		return timeStartLong;
 	}
 
 }
