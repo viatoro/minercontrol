@@ -38,7 +38,7 @@ public class CcminerAppMiner implements IAppMiner {
 	private String alg;
 	private boolean bendIng= false;
 	
-	private Long timeStartLong;
+	private Long timeStartLong =0L;
 
 	public CcminerAppMiner() {
 	}

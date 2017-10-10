@@ -241,18 +241,25 @@ public class MinerProcess implements Runnable {
 					// main controler
 					
 //					find non bench
-					RevenueBean revenueBean = revenueBeans.parallelStream().filter((rev)->rev.getPrice()==null).sorted().findFirst().get();
+					RevenueBean revenueBean = revenueBeans.parallelStream().filter((rev)->rev.getPrice()==null).sorted((rev1, rev2) -> {
+						Integer rev1int =  new Integer(rev1.hashCode());
+						Integer rev2int =  new Integer(rev2.hashCode());
+						return rev1int.compareTo(rev2int);
+					}).findFirst().orElse(null);
 					
 					
 //					cal mining
 					if (revenueBean==null) {
-						RevenueBean revenueBeanCheck = revenueBeans.stream().filter((rev) -> !runing.containsKey(rev)).sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().get();
-						long s = runing.keySet().parallelStream().filter((rev)->{
-							return rev.getPrice().compareTo(revenueBeanCheck.getPrice())==1;
-						}).count();
-						if(s==0) {
-							revenueBean = revenueBeanCheck;
+						RevenueBean revenueBeanCheck = revenueBeans.stream().filter((rev) -> !runing.containsKey(rev)).sorted((rev1, rev2) -> rev1.getPrice().compareTo(rev2.getPrice())).findFirst().orElse(null);
+						if(revenueBeanCheck!=null) {
+							long s = runing.keySet().parallelStream().filter((rev)->{
+								return rev.getPrice().compareTo(revenueBeanCheck.getPrice())==1;
+							}).count();
+							if(s==0) {
+								revenueBean = revenueBeanCheck;
+							}
 						}
+						
 					}
 
 //					case switch new miner
@@ -275,7 +282,7 @@ public class MinerProcess implements Runnable {
 							String user = (String) Ognl.getValue(pool.getConfigPoolBean().getUserFormat(), context, root, String.class);
 							String password = (String) Ognl.getValue(pool.getConfigPoolBean().getPasswordFormat(), context, root, String.class);
 
-							processMining.add(appMiner.run(revenueBean.getAlg(), host, port, user, password));
+//							processMining.add(appMiner.run(revenueBean.getAlg(), host, port, user, password));
 							appMiner.setBendIng(false);
 							runing.put(revenueBean, appMiner);
 						} catch (OgnlException e) {
@@ -286,19 +293,25 @@ public class MinerProcess implements Runnable {
 					
 					runing.entrySet().removeIf((revenueBeanEntry) -> {
 						IAppMiner miner = revenueBeanEntry.getValue();
-						RevenueBean revenueBeanCheck = revenueBeanEntry.getKey();
-						if(revenueBeanCheck.getPrice()==null&&miner.getTimeStartLong()-Calendar.getInstance().getTimeInMillis()>miner.getConfigMinerBean().getTotalTimeBenchSec()*1000) {
-							miner.stopBench();
-							return true;
-						}else {
-							if (miner.isRun()) {
+						if (miner.isRun()) {
+							RevenueBean revenueBeanCheck = revenueBeanEntry.getKey();
+							if(revenueBeanCheck.getPrice()==null) {
+								Long time = miner.getConfigMinerBean().getTotalTimeBenchSec();
+								if(time ==null)
+									time = 60L;
+								long totalTime = miner.getTimeStartLong()-Calendar.getInstance().getTimeInMillis();
+								if(totalTime>time*1000) {
+									miner.stopBench();
+									return true;
+								}
+							}else {
 								miner.check();
 							}
 						}
 						return false;
 					});
 					
-					
+					display();
 					Thread.sleep(10000);
 
 				} catch (Exception e) {
@@ -322,6 +335,13 @@ public class MinerProcess implements Runnable {
 		}
 	}
 	
+
+	private void display() {
+		System.out.print("\u001b[2J");
+		System.out.flush();
+		System.out.println("Test");
+	}
+
 
 	private MemberAccess mem = new MemberAccess() {
 
