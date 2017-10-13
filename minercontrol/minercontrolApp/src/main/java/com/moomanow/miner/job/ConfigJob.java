@@ -9,6 +9,7 @@ import java.util.Set;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
@@ -23,13 +24,19 @@ import com.moomanow.miner.dao.MinerControlDao;
 public class ConfigJob extends QuartzJobBean {
 
 	
-	@Autowired
-	private ApplicationContext appContext;
-	
-	@Autowired
 	private ConfigMinerDao configMinerDao;
 	@Autowired
+	@Required
+	public void setConfigMinerDao(ConfigMinerDao configMinerDao) {
+		this.configMinerDao = configMinerDao;
+	}
+	
 	private MinerControlDao minerControlDao;
+	@Autowired
+	@Required
+	public void setMinerControlDao(MinerControlDao minerControlDao) {
+		this.minerControlDao = minerControlDao;
+	}
 	
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
@@ -316,6 +323,9 @@ public class ConfigJob extends QuartzJobBean {
 			configMinerDao.saveConfigUser(configUserBean);
 		}
 
+		minerControlDao.setConfigMinerBeans(configMinerBeans);
+		minerControlDao.setConfigUserBean(configUserBean);
+		minerControlDao.setConfigPoolBeans(configPoolBeans);
 		// List<IAppMiner> list = new LinkedList<IAppMiner>();
 		//// list.add(new CcminerAppMiner());
 		// allMiners.put("", list );

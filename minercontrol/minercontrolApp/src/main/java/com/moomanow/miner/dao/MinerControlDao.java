@@ -72,9 +72,9 @@ public interface MinerControlDao {
 
 	public void setRevenueBeans(Set<RevenueBean> revenueBeans);
 
-	public boolean isBending();
-
-	public void setBending(boolean bending);
+//	public boolean isBending();
+//
+//	public void setBending(boolean bending);
 
 //	public Long getBenTimeEnd();
 //

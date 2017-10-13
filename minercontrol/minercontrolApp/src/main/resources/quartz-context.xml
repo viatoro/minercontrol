@@ -58,63 +58,80 @@
 <!--         </property> -->
 <!--     </bean> -->
 
+	<bean name="configMinerDao" class="com.moomanow.miner.config.dao.impl.ConfigMinerJson"/>
+	<bean name="hashRateDao" class="com.moomanow.miner.dao.impl.HashRateDaoImpl"/>
+	<bean name="minerControlDao" class="com.moomanow.miner.dao.impl.MinerControlDaoMemImpl">
+		<property name="mapPoolApi">
+			<map >
+				<entry key="yaamp" value="com.moomanow.miner.api.pool.impl.YaampPool"></entry>
+			</map>
+		</property>
+		
+		<property name="mapAppMiner">
+			<map >
+				<entry key="ccminer" value="com.moomanow.miner.appminer.impl.CcminerAppMiner"></entry>
+			</map>
+		</property>
+	</bean>
+
     <bean name="configJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.ConfigJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="configMinerDao" value-ref="configMinerDao" />
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 
     <bean name="dataPoolJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.DataPoolJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 
     <bean name="downloadMinerJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.DownloadMinerJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 
     <bean name="mathPoolToMinerJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.MathPoolToMinerJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 
     <bean name="selectAndDoMinerJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.SelectAndDoMinerJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 
     <bean name="checkMinerJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
         <property name="jobClass" value="com.moomanow.miner.job.CheckMinerJob" />
-<!--         <property name="jobDataMap"> -->
-<!--             <map> -->
-<!--                 <entry key="anotherBean" value-ref="anotherBean" /> -->
-<!--             </map> -->
-<!--         </property> -->
+        <property name="jobDataMap">
+            <map>
+                <entry key="minerControlDao" value-ref="minerControlDao" />
+            </map>
+        </property>
         <property name="durability" value="true" />
     </bean>
 

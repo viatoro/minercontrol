@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
 import com.moomanow.miner.api.pool.IPoolApi;
@@ -38,11 +39,14 @@ public class MinerControlDaoMemImpl implements MinerControlDao {
 	private List<ConfigPoolBean> configPoolBeans;
 	private ConfigUserBean configUserBean;
 	private Set<RevenueBean> revenueBeans = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private boolean bending;
+//	private boolean bending;
 
 //	private Long benTimeEnd;
 	
-	private ExecutorService execMain, executorPool, executorDownload, executorCheckHashRate;
+	private ExecutorService execMain = Executors.newFixedThreadPool(2);
+	private ExecutorService executorPool = Executors.newFixedThreadPool(2);
+	private ExecutorService executorDownload = Executors.newFixedThreadPool(2);
+	private ExecutorService executorCheckHashRate = Executors.newFixedThreadPool(2);
 
 	private Map<String,FutureTask<Boolean>> futureTaskPools= new ConcurrentHashMap<>();
 	
@@ -160,13 +164,13 @@ public class MinerControlDaoMemImpl implements MinerControlDao {
 		this.revenueBeans = revenueBeans;
 	}
 
-	public boolean isBending() {
-		return bending;
-	}
-
-	public void setBending(boolean bending) {
-		this.bending = bending;
-	}
+//	public boolean isBending() {
+//		return bending;
+//	}
+//
+//	public void setBending(boolean bending) {
+//		this.bending = bending;
+//	}
 
 //	public Long getBenTimeEnd() {
 //		return benTimeEnd;

@@ -11,6 +11,7 @@ import java.util.concurrent.FutureTask;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.moomanow.miner.api.pool.IPoolApi;
@@ -27,8 +28,12 @@ import ognl.OgnlException;
 
 public class SelectAndDoMinerJob extends QuartzJobBean {
 
-	@Autowired
 	private MinerControlDao minerControlDao;
+	@Autowired
+	@Required
+	public void setMinerControlDao(MinerControlDao minerControlDao) {
+		this.minerControlDao = minerControlDao;
+	}
 
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
