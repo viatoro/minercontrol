@@ -40,7 +40,7 @@ public class MinerControlDaoMemImpl implements MinerControlDao {
 	private Set<RevenueBean> revenueBeans = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private boolean bending;
 
-	private Long benTimeEnd;
+//	private Long benTimeEnd;
 	
 	private ExecutorService execMain, executorPool, executorDownload, executorCheckHashRate;
 
@@ -168,13 +168,13 @@ public class MinerControlDaoMemImpl implements MinerControlDao {
 		this.bending = bending;
 	}
 
-	public Long getBenTimeEnd() {
-		return benTimeEnd;
-	}
-
-	public void setBenTimeEnd(Long benTimeEnd) {
-		this.benTimeEnd = benTimeEnd;
-	}
+//	public Long getBenTimeEnd() {
+//		return benTimeEnd;
+//	}
+//
+//	public void setBenTimeEnd(Long benTimeEnd) {
+//		this.benTimeEnd = benTimeEnd;
+//	}
 
 	public ExecutorService getExecMain() {
 		return execMain;

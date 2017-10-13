@@ -76,9 +76,9 @@ public interface MinerControlDao {
 
 	public void setBending(boolean bending);
 
-	public Long getBenTimeEnd();
-
-	public void setBenTimeEnd(Long benTimeEnd);
+//	public Long getBenTimeEnd();
+//
+//	public void setBenTimeEnd(Long benTimeEnd);
 	
 	public ExecutorService getExecMain();
 
