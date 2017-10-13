@@ -1,5 +1,6 @@
 package com.moomanow.miner;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -56,6 +57,37 @@ public class Application {
 			System.out.println("Shouted Doew");
 		}, "Shutdown-thread");
 		Runtime.getRuntime().addShutdownHook(Thread );
+		try {
+			String os = System.getProperty("os.name").toLowerCase();
+			String url = "http://localhost:8080/";
+			if(os.indexOf("win") >= 0) {
+				Runtime rt = Runtime.getRuntime();
+				
+				rt.exec("rundll32 url.dll,FileProtocolHandler " + url);
+			}else if(os.indexOf("mac") >= 0) {
+				Runtime rt = Runtime.getRuntime();
+				rt.exec("open " + url);
+			}else if(os.indexOf("nix") >=0 || os.indexOf("nux") >=0) {
+				Runtime rt = Runtime.getRuntime();
+				String[] browsers = { "epiphany", "firefox", "mozilla", "konqueror",
+				                                 "netscape", "opera", "links", "lynx" };
+				StringBuffer cmd = new StringBuffer();
+				for (int i = 0; i < browsers.length; i++)
+				    if(i == 0)
+				        cmd.append(String.format(    "%s \"%s\"", browsers[i], url));
+				    else
+				        cmd.append(String.format(" || %s \"%s\"", browsers[i], url)); 
+				    // If the first didn't work, try the next browser and so on
+
+				rt.exec(new String[] { "sh", "-c", cmd.toString() });
+			}else {
+				
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
     @Bean
