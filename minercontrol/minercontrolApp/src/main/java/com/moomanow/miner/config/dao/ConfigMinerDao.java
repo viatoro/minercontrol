@@ -1,4 +1,4 @@
-package com.moomanow.miner.config;
+package com.moomanow.miner.config.dao;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import com.moomanow.miner.config.bean.ConfigMinerBean;
 import com.moomanow.miner.config.bean.ConfigPoolBean;
 import com.moomanow.miner.config.bean.ConfigUserBean;
 
-public interface ConfigMiner {
+public interface ConfigMinerDao {
 	
 	
 	public List<ConfigMinerBean> loadConfigMiner();

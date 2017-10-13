@@ -1,4 +1,4 @@
-package com.moomanow.miner.config.impl;
+package com.moomanow.miner.config.dao.impl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,13 +12,12 @@ import java.util.List;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.moomanow.miner.bean.HashRate;
-import com.moomanow.miner.config.ConfigMiner;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 import com.moomanow.miner.config.bean.ConfigPoolBean;
 import com.moomanow.miner.config.bean.ConfigUserBean;
+import com.moomanow.miner.config.dao.ConfigMinerDao;
 
-public class ConfigMinerJson implements ConfigMiner {
+public class ConfigMinerJson implements ConfigMinerDao {
 
 	@Override
 	public List<ConfigMinerBean> loadConfigMiner() {

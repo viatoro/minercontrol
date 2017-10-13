@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
@@ -22,17 +21,19 @@ import com.moomanow.miner.appminer.impl.CcminerAppMiner;
 import com.moomanow.miner.bean.HashRate;
 import com.moomanow.miner.bean.RatePrice;
 import com.moomanow.miner.bean.RevenueBean;
-import com.moomanow.miner.config.ConfigMiner;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 import com.moomanow.miner.config.bean.ConfigPoolBean;
 import com.moomanow.miner.config.bean.ConfigUserBean;
-import com.moomanow.miner.config.impl.ConfigMinerJson;
+import com.moomanow.miner.config.dao.ConfigMinerDao;
+import com.moomanow.miner.config.dao.impl.ConfigMinerJson;
 import com.moomanow.miner.utiles.DownloadUtils;
 
 import ognl.MemberAccess;
 import ognl.Ognl;
 import ognl.OgnlException;
 
+
+@Deprecated
 public class MinerProcess implements Runnable {
 
 	// private Map<String,List<IAppMiner>> allMiners = new
@@ -366,7 +367,7 @@ public class MinerProcess implements Runnable {
 
 	private void loadConfig() {
 
-		ConfigMiner configMiner = new ConfigMinerJson();
+		ConfigMinerDao configMiner = new ConfigMinerJson();
 
 		configMinerBeans = configMiner.loadConfigMiner();
 		if (configMinerBeans == null) {
