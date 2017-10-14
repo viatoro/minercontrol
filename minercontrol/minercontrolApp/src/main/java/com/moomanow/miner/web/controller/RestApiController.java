@@ -1,23 +1,21 @@
 package com.moomanow.miner.web.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.moomanow.miner.api.pool.IPoolApi;
+import com.moomanow.miner.appminer.IAppMiner;
 import com.moomanow.miner.dao.MinerControlDao;
+import com.moomanow.miner.web.util.CustomErrorType;
 
 //import com.websystique.springboot.model.User;
 //import com.websystique.springboot.service.UserService;
@@ -33,13 +31,50 @@ public class RestApiController {
 	private MinerControlDao minerControlDao;
 	
 	@RequestMapping(value = "/pool/", method = RequestMethod.GET)
-	public ResponseEntity<Map<String, IPoolApi>> listAllUsers() {
-		Map<String, IPoolApi> pool = minerControlDao.getAllPools();
-		if (pool.isEmpty()) {
+	public ResponseEntity<Map<String, IPoolApi>> listAllPools() {
+		Map<String, IPoolApi> pools = minerControlDao.getAllPools();
+		if (pools.isEmpty()) {
 			return new ResponseEntity(HttpStatus.NO_CONTENT);
 			// You many decide to return HttpStatus.NOT_FOUND
 		}
-		return new ResponseEntity<Map<String, IPoolApi>>(pool, HttpStatus.OK);
+		return new ResponseEntity<Map<String, IPoolApi>>(pools, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/pool/{id}", method = RequestMethod.GET)
+	public ResponseEntity<?> getPool(@PathVariable("id") String id) {
+		logger.info("Fetching User with id {}", id);
+		Map<String, IPoolApi> pools = minerControlDao.getAllPools();
+		IPoolApi pool = pools.get(id);
+		if (pool == null) {
+			logger.error("User with id {} not found.", id);
+			return new ResponseEntity(new CustomErrorType("User with id " + id 
+					+ " not found"), HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<IPoolApi>(pool, HttpStatus.OK);
+	}
+	
+	
+	@RequestMapping(value = "/miner/", method = RequestMethod.GET)
+	public ResponseEntity<Map<String, IAppMiner>> listAllMiners() {
+		Map<String, IAppMiner> miners = minerControlDao.getAllMiners();
+		if (miners.isEmpty()) {
+			return new ResponseEntity(HttpStatus.NO_CONTENT);
+			// You many decide to return HttpStatus.NOT_FOUND
+		}
+		return new ResponseEntity<Map<String, IAppMiner>>(miners, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/miner/{id}", method = RequestMethod.GET)
+	public ResponseEntity<?> getMiner(@PathVariable("id") String id) {
+		logger.info("Fetching User with id {}", id);
+		Map<String, IAppMiner> miners = minerControlDao.getAllMiners();
+		IAppMiner miner = miners.get(id);
+		if (miner == null) {
+			logger.error("User with id {} not found.", id);
+			return new ResponseEntity(new CustomErrorType("User with id " + id 
+					+ " not found"), HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<IAppMiner>(miner, HttpStatus.OK);
 	}
 
 //	@Autowired
