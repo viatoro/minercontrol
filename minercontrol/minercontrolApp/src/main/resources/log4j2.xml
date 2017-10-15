@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<properties>
+		<property name="logDir">log/minerControl</property>
+		<property name="path_sep">/</property>
+		<property name="systemName">MinerControl</property>
+		<property name="ConversionPattern"     >%d{yyyy-MM-dd@HH:mm:ss.SSS}\t%-5p\t[${systemName}]\t[%X{SESSION_ID}]\t%X{USER_NAME}\t%m\t(%13F\:%M\:%L)%n</property>
+		<property name="ActionLogPattern"      >%d{yyyy-MM-dd@HH:mm:ss.SSS}\t%-5p\t[${systemName}]\t[%X{SESSION_ID}]\t%X{USER_NAME}\t%m%n</property>
+		<property name="ProcessLogPattern"     >%d{yyyy-MM-dd@HH:mm:ss.SSS}\t%-5p\t[${systemName}]\t[%X{SESSION_ID}]\t%X{USER_NAME}\t%m%n</property>
+		<property name="TransactionLogPattern" >%d{yyyy-MM-dd@HH:mm:ss.SSS}\t%-5p\t[${systemName}]\t[%X{SESSION_ID}]\t%X{USER_NAME}\t%m%n</property>
+		<property name="DatePattern">yyyy-MM-dd-HH</property>
+	</properties>
+	
+	<Appenders>
+		<RollingFile  name="stdout" fileName="${logDir}${path_sep}console.log" filePattern="${logDir}${path_sep}$${date:yyyy-MM}/console-%d{MM-dd-yyyy}-%i.log.gz">
+			<PatternLayout pattern="${ConversionPattern}" />
+			<Policies>
+				<OnStartupTriggeringPolicy />
+				<TimeBasedTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="250 MB" />
+			</Policies>
+		</RollingFile >
+<!-- 		<NoSql name="databaseAppender"> -->
+<!-- 			<MongoDb databaseName="log" collectionName="applicationLog" server="192.168.100.70" username="admin" password="moomanaw" /> -->
+<!-- 		</NoSql> -->
+		<Console name="console" target="SYSTEM_OUT">
+			<PatternLayout
+				pattern="${ConversionPattern}" />
+		</Console>
+	</Appenders>
+	<Loggers>
+<!-- 		<Logger name="com.jobsmatcher" level="error"> -->
+<!-- 	    	<AppenderRef ref="console"/> -->
+<!-- 			<AppenderRef ref="stdout" /> -->
+<!-- 	    </Logger> -->
+<!-- 	    <Logger name="org.kanomchan" level="error"> -->
+<!-- 	    	<AppenderRef ref="console"/> -->
+<!-- 			<AppenderRef ref="stdout" /> -->
+<!-- 	    </Logger> -->
+<!-- 	    <Logger name="org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLValidConnectionChecker" level="error"> -->
+<!-- 	    	<AppenderRef ref="console"/> -->
+<!-- 			<AppenderRef ref="stdout" /> -->
+<!-- 	    </Logger> -->
+		<Root level="info">
+			<AppenderRef ref="console" />
+<!-- 			<AppenderRef ref="stdout" /> -->
+<!-- 			<AppenderRef ref="databaseAppender" /> -->
+		</Root>
+	</Loggers>
+</Configuration>

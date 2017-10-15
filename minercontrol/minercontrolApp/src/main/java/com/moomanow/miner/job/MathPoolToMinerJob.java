@@ -1,5 +1,8 @@
 package com.moomanow.miner.job;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +26,10 @@ import com.moomanow.miner.config.bean.ConfigUserBean;
 import com.moomanow.miner.dao.MinerControlDao;
 
 public class MathPoolToMinerJob extends QuartzJobBean {
+	/**
+	 * Logger for this class
+	 */
+	private static final Logger logger = LogManager.getLogger(MathPoolToMinerJob.class.getName());
 
 	private MinerControlDao minerControlDao;
 	@Autowired
@@ -32,6 +39,10 @@ public class MathPoolToMinerJob extends QuartzJobBean {
 	}
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - start"); //$NON-NLS-1$
+		}
+
 		// cal
 		Set<String> listAlg = minerControlDao.getListAlg();
 		Map<String, Set<IAppMiner>> mapAlgAppMiner = minerControlDao.getMapAlgAppMiner();
@@ -70,6 +81,10 @@ public class MathPoolToMinerJob extends QuartzJobBean {
 
 			});
 		});
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - end"); //$NON-NLS-1$
+		}
 	}
 
 }

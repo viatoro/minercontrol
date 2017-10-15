@@ -1,6 +1,8 @@
 package com.moomanow.miner.web.controller;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.appminer.IAppMiner;
+import com.moomanow.miner.bean.RevenueBean;
 import com.moomanow.miner.dao.MinerControlDao;
 import com.moomanow.miner.web.util.CustomErrorType;
 
@@ -76,6 +79,40 @@ public class RestApiController {
 		}
 		return new ResponseEntity<IAppMiner>(miner, HttpStatus.OK);
 	}
+	
+	@RequestMapping(value = "/runing/", method = RequestMethod.GET)
+	public ResponseEntity<Map<RevenueBean, IAppMiner>> listRunings() {
+		Map<RevenueBean, IAppMiner> miners = minerControlDao.getRuning();
+		if (miners.isEmpty()) {
+			return new ResponseEntity(HttpStatus.NO_CONTENT);
+			// You many decide to return HttpStatus.NOT_FOUND
+		}
+		return new ResponseEntity<Map<RevenueBean, IAppMiner>>(miners, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/runingRevenue/", method = RequestMethod.GET)
+	public ResponseEntity<Set<RevenueBean>> listRuningRevenues() {
+		Set<RevenueBean> miners = minerControlDao.getRuning().keySet();
+		if (miners.isEmpty()) {
+			return new ResponseEntity(HttpStatus.NO_CONTENT);
+			// You many decide to return HttpStatus.NOT_FOUND
+		}
+		return new ResponseEntity<Set<RevenueBean>>(miners, HttpStatus.OK);
+	}
+	
+//	@RequestMapping(value = "/runing/{id}", method = RequestMethod.GET)
+//	public ResponseEntity<?> getRuning(@PathVariable("id") String id) {
+//		logger.info("Fetching User with id {}", id);
+//		Map<String, IAppMiner> miners = minerControlDao.getAllMiners();
+//		IAppMiner miner = miners.get(id);
+//		if (miner == null) {
+//			logger.error("User with id {} not found.", id);
+//			return new ResponseEntity(new CustomErrorType("User with id " + id 
+//					+ " not found"), HttpStatus.NOT_FOUND);
+//		}
+//		return new ResponseEntity<IAppMiner>(miner, HttpStatus.OK);
+//	}
+//	processMining
 
 //	@Autowired
 //	UserService userService; //Service which will do all data retrieval/manipulation work

@@ -1,5 +1,8 @@
 package com.moomanow.miner.job;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +25,10 @@ import com.moomanow.miner.config.dao.ConfigMinerDao;
 import com.moomanow.miner.dao.MinerControlDao;
 
 public class ConfigJob extends QuartzJobBean {
+	/**
+	 * Logger for this class
+	 */
+	private static final Logger logger = LogManager.getLogger(ConfigJob.class.getName());
 
 	
 	private ConfigMinerDao configMinerDao;
@@ -40,6 +47,10 @@ public class ConfigJob extends QuartzJobBean {
 	
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - start"); //$NON-NLS-1$
+		}
+
 		loadConfig();
 		List<ConfigMinerBean> configMinerBeans = minerControlDao.getConfigMinerBeans();
 //		ConfigUserBean configUserBean = minerControlDao.getConfigUserBean();
@@ -66,6 +77,8 @@ public class ConfigJob extends QuartzJobBean {
 				poolApi.setConfigPoolBean(configPoolBean);
 				allPools.put(configPoolBean.getName(), poolApi);
 			} catch (InstantiationException | IllegalAccessException e) {
+				logger.error("executeInternal(JobExecutionContext)", e); //$NON-NLS-1$
+
 				e.printStackTrace();
 			}
 		}
@@ -94,12 +107,22 @@ public class ConfigJob extends QuartzJobBean {
 				}
 
 			} catch (InstantiationException | IllegalAccessException e) {
+				logger.error("executeInternal(JobExecutionContext)", e); //$NON-NLS-1$
+
 				e.printStackTrace();
 			}
 
 		}
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - end"); //$NON-NLS-1$
+		}
 	}
 	private void loadConfig() {
+		if (logger.isDebugEnabled()) {
+			logger.debug("loadConfig() - start"); //$NON-NLS-1$
+		}
+
 		List<ConfigMinerBean> configMinerBeans = minerControlDao.getConfigMinerBeans();
 		ConfigUserBean configUserBean = minerControlDao.getConfigUserBean();
 		List<ConfigPoolBean> configPoolBeans = minerControlDao.getConfigPoolBeans();
@@ -330,6 +353,10 @@ public class ConfigJob extends QuartzJobBean {
 		//// list.add(new CcminerAppMiner());
 		// allMiners.put("", list );
 		// allPools.add(new YaampPool("http://www.zpool.ca/api/status"));
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("loadConfig() - end"); //$NON-NLS-1$
+		}
 	}
 
 }

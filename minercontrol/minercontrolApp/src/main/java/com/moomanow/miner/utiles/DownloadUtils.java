@@ -1,6 +1,10 @@
 package com.moomanow.miner.utiles;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,14 +16,27 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.SeekableByteChannel;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
 
 public class DownloadUtils {
+	/**
+	 * Logger for this class
+	 */
+	private static final Logger logger = LogManager.getLogger(DownloadUtils.class.getName());
 
 	
 	public static void download(String url,String pathOut) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("download(String, String) - start"); //$NON-NLS-1$
+		}
+
 		try {
 			URL website = new URL(url);
 
@@ -37,12 +54,16 @@ public class DownloadUtils {
 					baos.write(byteChunk, 0, n);
 					sumCount += n;
 					if (size > 0) {
-						System.out.println("Percentace: " + (sumCount / size * 100.0) + "%");
+						if (logger.isDebugEnabled()) {
+							logger.debug("download(String, String) - {}", "Percentace: " + (sumCount / size * 100.0) + "%"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						}
 					}
 				}
 			} catch (IOException e) {
-				System.err.printf("Failed while reading bytes from %s: %s", website.toExternalForm(), e.getMessage());
-				e.printStackTrace();
+				logger.error("download(String, String)", e); //$NON-NLS-1$
+
+//				System.err.printf("Failed while reading bytes from %s: %s", website.toExternalForm(), e.getMessage());
+//				e.printStackTrace();
 				// Perform any other exception handling that's appropriate.
 			} finally {
 				if (is != null) {
@@ -50,30 +71,42 @@ public class DownloadUtils {
 				}
 			}
 
-			SeekableByteChannel seekableByteChannel = new SeekableInMemoryByteChannel(baos.toByteArray());
+			
 
 			File outputDir = new File(pathOut);
 			
-			unSevenZipToDir(seekableByteChannel, outputDir);
+			archiveToDir(baos.toByteArray(), outputDir);
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			logger.error("download(String, String)", e); //$NON-NLS-1$
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("download(String, String)", e); //$NON-NLS-1$
 		}
 
+		if (logger.isDebugEnabled()) {
+			logger.debug("download(String, String) - end"); //$NON-NLS-1$
+		}
 	}
 
-	private static void unSevenZipToDir(SeekableByteChannel seekableByteChannel, File outputDir) {
+	private static void archiveToDir(byte[] bs, File outputDir) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("archiveToDir(byte[], File) - start"); //$NON-NLS-1$
+		}
+
 		// Make sure output dir exists
 		outputDir.mkdirs();
 		if (outputDir.exists()) {
 			// FileInputStream stream;
 			try {
+//				SeekableByteChannel seekableByteChannel = new SeekableInMemoryByteChannel(bs);
+				ByteArrayInputStream bis = new ByteArrayInputStream(bs);
+				ArchiveInputStream input = new ArchiveStreamFactory().createArchiveInputStream(bis);
+//				input.getNextEntry()
 				FileOutputStream output = null;
-				SevenZFile f7z = new SevenZFile(seekableByteChannel);
-				SevenZArchiveEntry entry;
+//				SevenZFile f7z = new SevenZFile(seekableByteChannel);
+//				ZipFile zipFile = new ZipFile(seekableByteChannel);
+				ArchiveEntry entry;
 				long maxSize = 0;
-				while ((entry = f7z.getNextEntry()) != null) {
+				while ((entry = input.getNextEntry()) != null) {
 					if (entry != null) {
 						String s = entry.getName();
 						if (s != null) {
@@ -85,28 +118,37 @@ public class DownloadUtils {
 								File outFile = new File(outFileName);
 								// Extract only if it does not already exist
 								if (outFile.exists() == false) {
-									System.out.println("Extracting " + s + " => size = " + sz);
+									if (logger.isDebugEnabled()) {
+										logger.debug("archiveToDir(byte[], File) - {}", "Extracting " + s + " => size = " + sz); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+									}
 									FileOutputStream fos = new FileOutputStream(outFile);
 									BufferedOutputStream dest = new BufferedOutputStream(fos);
-									while ((count = f7z.read(data)) != -1) {
+									while ((count = input.read(data)) != -1) {
 										dest.write(data, 0, count);
 									}
 									dest.flush();
 									dest.close();
 								} else {
-									System.out.println("Using already Extracted " + s + " => size = " + sz);
+									if (logger.isDebugEnabled()) {
+										logger.debug("archiveToDir(byte[], File) - {}", "Using already Extracted " + s + " => size = " + sz); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+									}
 								}
 							} // end sz > 0
 						} // end s != null
 					} // end if entry
 				} // end while
-				f7z.close();
-			} catch (FileNotFoundException e) { 
-				e.printStackTrace();
-
-			} catch (IOException e) { 
-				e.printStackTrace();
+				input.close();
+			} catch (FileNotFoundException e) {
+				logger.error("archiveToDir(byte[], File)", e); //$NON-NLS-1$
+			} catch (IOException e) {
+				logger.error("archiveToDir(byte[], File)", e); //$NON-NLS-1$
+			} catch (ArchiveException e) {
+				logger.error("archiveToDir(byte[], File)", e); //$NON-NLS-1$
 			}
+		}
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("archiveToDir(byte[], File) - end"); //$NON-NLS-1$
 		}
 	}
 }

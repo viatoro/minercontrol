@@ -1,5 +1,8 @@
 package com.moomanow.miner.job;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +19,10 @@ import com.moomanow.miner.dao.MinerControlDao;
 import com.moomanow.miner.utiles.DownloadUtils;
 
 public class DownloadMinerJob extends QuartzJobBean {
+	/**
+	 * Logger for this class
+	 */
+	private static final Logger logger = LogManager.getLogger(DownloadMinerJob.class.getName());
 	
 	private MinerControlDao minerControlDao;
 	@Autowired
@@ -26,6 +33,10 @@ public class DownloadMinerJob extends QuartzJobBean {
 
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - start"); //$NON-NLS-1$
+		}
+
 		// download miner
 		Set<String> listAlg = minerControlDao.getListAlg();
 		Map<String, Set<IAppMiner>> mapAlgAppMiner = minerControlDao.getMapAlgAppMiner();
@@ -44,6 +55,10 @@ public class DownloadMinerJob extends QuartzJobBean {
 				executorDownload.execute(futureTaskDownload);
 			});
 		});
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - end"); //$NON-NLS-1$
+		}
 	}
 
 }

@@ -1,5 +1,8 @@
 package com.moomanow.miner.job;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.lang.reflect.Member;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,10 @@ import ognl.Ognl;
 import ognl.OgnlException;
 
 public class SelectAndDoMinerJob extends QuartzJobBean {
+	/**
+	 * Logger for this class
+	 */
+	private static final Logger logger = LogManager.getLogger(SelectAndDoMinerJob.class.getName());
 
 	private MinerControlDao minerControlDao;
 	@Autowired
@@ -37,6 +44,10 @@ public class SelectAndDoMinerJob extends QuartzJobBean {
 
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - start"); //$NON-NLS-1$
+		}
+
 		// find non bench
 		Set<String> listAlg = minerControlDao.getListAlg();
 		Map<String, Set<IAppMiner>> mapAlgAppMiner = minerControlDao.getMapAlgAppMiner();
@@ -102,10 +113,16 @@ public class SelectAndDoMinerJob extends QuartzJobBean {
 					// appMiner.setBendIng(false);
 					runing.put(revenueBean, appMiner);
 				} catch (OgnlException e) {
+					logger.error("executeInternal(JobExecutionContext)", e); //$NON-NLS-1$
+
 					e.printStackTrace();
 				}
 			}
 
+		}
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("executeInternal(JobExecutionContext) - end"); //$NON-NLS-1$
 		}
 	}
 
@@ -113,19 +130,15 @@ public class SelectAndDoMinerJob extends QuartzJobBean {
 
 		@Override
 		public Object setup(Map context, Object target, Member member, String propertyName) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
 		@Override
 		public void restore(Map context, Object target, Member member, String propertyName, Object state) {
-			// TODO Auto-generated method stub
-
 		}
 
 		@Override
 		public boolean isAccessible(Map context, Object target, Member member, String propertyName) {
-			// TODO Auto-generated method stub
 			return true;
 		}
 	};
