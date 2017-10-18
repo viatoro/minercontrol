@@ -255,7 +255,7 @@ public class ConfigJob extends QuartzJobBean {
 			// alg.add("yescrypt");
 			configMinerBean.setAlg(alg);
 			configMinerBean.setAppMinerType("ccminer");
-			configMinerBean.setMinerName("Skunk");
+			configMinerBean.setMinerName("Ccminer-x11gost");
 			configMinerBean.setProgame("ccminer_x11gost.exe");
 			configMinerBean.setUrlDownload("https://github.com/nicehash/ccminer-x11gost/releases/download/ccminer-x11gost_windows/ccminer_x11gost.7z");
 			configMinerBeans.add(configMinerBean);
@@ -314,7 +314,7 @@ public class ConfigJob extends QuartzJobBean {
 			configPoolBean.setPoolApi("http://www.zpool.ca/api/status");
 			configPoolBean.setName("zpool");
 			configPoolBean.setPoolType("yaamp");
-			configPoolBean.setHostFormat("pool.data[alg].name+\"mine.zpool.ca\"");
+			configPoolBean.setHostFormat("pool.data[alg].name+\".mine.zpool.ca\"");
 			configPoolBean.setUserFormat("user.btcAddress");
 			configPoolBean.setPortFormat("pool.data[alg].port");
 			configPoolBean.setPasswordFormat("user.workerName+\",c=BTC\"");
@@ -325,7 +325,7 @@ public class ConfigJob extends QuartzJobBean {
 			configPoolBean.setPoolApi("http://pool.hashrefinery.com/api/status");
 			configPoolBean.setName("hashrefinery");
 			configPoolBean.setPoolType("yaamp");
-			configPoolBean.setHostFormat("pool.data[alg].name+\"us.hashrefinery.com\"");
+			configPoolBean.setHostFormat("pool.data[alg].name+\".us.hashrefinery.com\"");
 			configPoolBean.setUserFormat("user.btcAddress");
 			configPoolBean.setPortFormat("pool.data[alg].port");
 			configPoolBean.setPasswordFormat("user.workerName+\",c=BTC\"");

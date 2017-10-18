@@ -74,8 +74,12 @@ public class DownloadUtils {
 			
 
 			File outputDir = new File(pathOut);
+			try {
+				archiveToDir(baos.toByteArray(), outputDir);
+			}catch (Exception e) {
+				sevenZToDir(baos.toByteArray(), outputDir);
+			}
 			
-			archiveToDir(baos.toByteArray(), outputDir);
 		} catch (MalformedURLException e) {
 			logger.error("download(String, String)", e); //$NON-NLS-1$
 		} catch (IOException e) {
@@ -86,7 +90,68 @@ public class DownloadUtils {
 			logger.debug("download(String, String) - end"); //$NON-NLS-1$
 		}
 	}
+	private static void sevenZToDir(byte[] bs, File outputDir) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("archiveToDir(byte[], File) - start"); //$NON-NLS-1$
+		}
 
+		// Make sure output dir exists
+		outputDir.mkdirs();
+		if (outputDir.exists()) {
+			// FileInputStream stream;
+			try {
+				SeekableByteChannel seekableByteChannel = new SeekableInMemoryByteChannel(bs);
+//				ByteArrayInputStream bis = new ByteArrayInputStream(bs);
+//				ArchiveInputStream input = new ArchiveStreamFactory().createArchiveInputStream(bis);
+//				input.getNextEntry()
+				FileOutputStream output = null;
+				SevenZFile input = new SevenZFile(seekableByteChannel);
+//				ZipFile zipFile = new ZipFile(seekableByteChannel);
+				ArchiveEntry entry;
+				long maxSize = 0;
+				while ((entry = input.getNextEntry()) != null) {
+					if (entry != null) {
+						String s = entry.getName();
+						if (s != null) {
+							long sz = entry.getSize();
+							if (sz > 0) {
+								int count;
+								byte data[] = new byte[4096];
+								String outFileName = outputDir.getPath() + "/" + new File(entry.getName()).getName();
+								File outFile = new File(outFileName);
+								// Extract only if it does not already exist
+								if (outFile.exists() == false) {
+									if (logger.isDebugEnabled()) {
+										logger.debug("archiveToDir(byte[], File) - {}", "Extracting " + s + " => size = " + sz); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+									}
+									FileOutputStream fos = new FileOutputStream(outFile);
+									BufferedOutputStream dest = new BufferedOutputStream(fos);
+									while ((count = input.read(data)) != -1) {
+										dest.write(data, 0, count);
+									}
+									dest.flush();
+									dest.close();
+								} else {
+									if (logger.isDebugEnabled()) {
+										logger.debug("archiveToDir(byte[], File) - {}", "Using already Extracted " + s + " => size = " + sz); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+									}
+								}
+							} // end sz > 0
+						} // end s != null
+					} // end if entry
+				} // end while
+				input.close();
+			} catch (FileNotFoundException e) {
+				logger.error("archiveToDir(byte[], File)", e); //$NON-NLS-1$
+			} catch (IOException e) {
+				logger.error("archiveToDir(byte[], File)", e); //$NON-NLS-1$
+			}
+		}
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("archiveToDir(byte[], File) - end"); //$NON-NLS-1$
+		}
+	}
 	private static void archiveToDir(byte[] bs, File outputDir) {
 		if (logger.isDebugEnabled()) {
 			logger.debug("archiveToDir(byte[], File) - start"); //$NON-NLS-1$

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -20,6 +21,7 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.moomanow.miner.api.miner.IMinerReaderApi;
 import com.moomanow.miner.api.miner.impl.CcminerApiReader;
 import com.moomanow.miner.appminer.IAppMiner;
@@ -37,6 +39,8 @@ public class CcminerAppMiner implements IAppMiner {
 	private ConfigMinerBean configMinerBean;
 	private String alg;
 	private boolean bendIng= false;
+	private OutputStream stdOut;
+	private InputStream stdIn;
 	
 	private Long timeStartLong =0L;
 
@@ -103,9 +107,12 @@ public class CcminerAppMiner implements IAppMiner {
 		try {
 			this.alg = alg;
 			command = "-a " + alg + " -o stratum+tcp://" + host + ":" + port + " -u " + user + " -p " + password;
-
-			Process process = runTime.exec("./miner/" + configMinerBean.getMinerName()+"/"+configMinerBean.getProgame() + " " + command);
+			
+			System.out.println(command);
+			process = runTime.exec("./miner/" + configMinerBean.getMinerName()+"/"+configMinerBean.getProgame() + " " + command);
 			timeStartLong = Calendar.getInstance().getTimeInMillis();
+
+			stdIn = process.getInputStream();
 			// process.destroy();
 			return process;
 		} catch (IOException e) {
@@ -146,5 +153,19 @@ public class CcminerAppMiner implements IAppMiner {
 	public Long getTimeStartLong() {
 		return timeStartLong;
 	}
+
+	@Override
+	@JsonIgnore
+	public OutputStream getStdOut() {
+		return stdOut;
+	}
+
+	@Override
+	@JsonIgnore
+	public InputStream getStdIn() {
+		return stdIn;
+	}
+	
+	
 
 }

@@ -1,5 +1,8 @@
 package com.moomanow.miner.appminer;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import com.moomanow.miner.bean.HashRate;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 
@@ -19,5 +22,7 @@ public interface IAppMiner {
 	public void setBendIng(boolean b);
 	public boolean stopBench();
 	public Long getTimeStartLong();
+	public OutputStream getStdOut();
+	public InputStream getStdIn();
 
 }

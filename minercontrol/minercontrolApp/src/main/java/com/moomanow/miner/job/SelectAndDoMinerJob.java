@@ -19,6 +19,8 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.appminer.IAppMiner;
+import com.moomanow.miner.bean.HashRate;
+import com.moomanow.miner.bean.RatePrice;
 import com.moomanow.miner.bean.RevenueBean;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 import com.moomanow.miner.config.bean.ConfigPoolBean;
@@ -65,6 +67,31 @@ public class SelectAndDoMinerJob extends QuartzJobBean {
 		Set<RevenueBean> revenueBeans = minerControlDao.getRevenueBeans();
 		Map<RevenueBean, IAppMiner> runing = minerControlDao.getRuning();
 		List<Process> processMining = minerControlDao.getProcessMining();
+		listAlg.stream().forEach((String alg) -> {
+			Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
+			if (appMiners == null)
+				return;
+			appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded()).forEach((appMiner) -> {
+				Set<IPoolApi> poolapis = mapAlgPoolApi.get(alg);
+				if (poolapis == null)
+					return;
+				poolapis.forEach((pool) -> {
+					HashRate hashRate = appMiner.getHashRateBenchmarked(alg);
+					RatePrice price = pool.getMapRatePrices().get(alg);
+					RevenueBean revenueBean = new RevenueBean();
+					revenueBean.setAlg(alg);
+					revenueBean.setPool(pool);
+					revenueBean.setMiner(appMiner);
+					if(hashRate!=null) {
+						revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
+					}
+					if(revenueBeans.contains(revenueBean))
+						revenueBeans.remove(revenueBean);
+					revenueBeans.add(revenueBean);
+				});
+
+			});
+		});
 		RevenueBean revenueBean = revenueBeans.parallelStream().filter((rev) -> rev.getPrice() == null).sorted((rev1, rev2) -> {
 			Integer rev1int = new Integer(rev1.hashCode());
 			Integer rev2int = new Integer(rev2.hashCode());

@@ -1,14 +1,17 @@
 package com.moomanow.miner.job;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,19 +20,17 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.appminer.IAppMiner;
-import com.moomanow.miner.bean.HashRate;
-import com.moomanow.miner.bean.RatePrice;
 import com.moomanow.miner.bean.RevenueBean;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 import com.moomanow.miner.config.bean.ConfigPoolBean;
 import com.moomanow.miner.config.bean.ConfigUserBean;
 import com.moomanow.miner.dao.MinerControlDao;
-@Deprecated
-public class MathPoolToMinerJob extends QuartzJobBean {
+
+public class SysOutMinerJob extends QuartzJobBean {
 	/**
 	 * Logger for this class
 	 */
-	private static final Logger logger = LogManager.getLogger(MathPoolToMinerJob.class.getName());
+	private static final Logger logger = LogManager.getLogger(SysOutMinerJob.class.getName());
 
 	private MinerControlDao minerControlDao;
 	@Autowired
@@ -43,7 +44,6 @@ public class MathPoolToMinerJob extends QuartzJobBean {
 			logger.debug("executeInternal(JobExecutionContext) - start"); //$NON-NLS-1$
 		}
 
-		// cal
 		Set<String> listAlg = minerControlDao.getListAlg();
 		Map<String, Set<IAppMiner>> mapAlgAppMiner = minerControlDao.getMapAlgAppMiner();
 		Map<String, FutureTask<Boolean>> minerDoenloadIng = minerControlDao.getMinerDoenloadIng();
@@ -58,28 +58,21 @@ public class MathPoolToMinerJob extends QuartzJobBean {
 		Map<String, Set<IPoolApi>> mapAlgPoolApi = minerControlDao.getMapAlgPoolApi();
 		Map<String, FutureTask<Boolean>> futureTaskPools = minerControlDao.getFutureTaskPools();
 		Set<RevenueBean> revenueBeans = minerControlDao.getRevenueBeans();
-		listAlg.stream().forEach((String alg) -> {
-			Set<IAppMiner> appMiners = mapAlgAppMiner.get(alg);
-			if (appMiners == null)
-				return;
-			appMiners.stream().filter((appMiner) -> appMiner.hasDownloaded()).forEach((appMiner) -> {
-				Set<IPoolApi> poolapis = mapAlgPoolApi.get(alg);
-				if (poolapis == null)
-					return;
-				poolapis.forEach((pool) -> {
-					HashRate hashRate = appMiner.getHashRateBenchmarked(alg);
-					RatePrice price = pool.getMapRatePrices().get(alg);
-					RevenueBean revenueBean = new RevenueBean();
-					revenueBean.setAlg(alg);
-					revenueBean.setPool(pool);
-					revenueBean.setMiner(appMiner);
-					if(hashRate!=null) {
-						revenueBean.setPrice(hashRate.getRate().multiply(price.getPrice()));
-					}
-					revenueBeans.add(revenueBean);
-				});
-
-			});
+		Map<RevenueBean, IAppMiner> runing = minerControlDao.getRuning();
+		runing.entrySet().removeIf((revenueBeanEntry) -> {
+			IAppMiner miner = revenueBeanEntry.getValue();
+			if (miner.isRun()) {
+				try {
+		            InputStreamReader isr = new InputStreamReader(miner.getStdIn());
+		            BufferedReader br = new BufferedReader(isr);
+		            String line=null;
+		            while ( (line = br.readLine()) != null)
+		                System.out.println(line);    
+		        } catch (IOException ioe) {
+		            ioe.printStackTrace();  
+		        }
+			}
+			return false;
 		});
 
 		if (logger.isDebugEnabled()) {
