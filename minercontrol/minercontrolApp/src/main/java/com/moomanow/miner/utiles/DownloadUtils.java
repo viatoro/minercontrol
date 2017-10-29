@@ -74,10 +74,10 @@ public class DownloadUtils {
 			
 
 			File outputDir = new File(pathOut);
-			try {
-				archiveToDir(baos.toByteArray(), outputDir);
-			}catch (Exception e) {
+			if(url.endsWith("7z")) {
 				sevenZToDir(baos.toByteArray(), outputDir);
+			}else {
+				archiveToDir(baos.toByteArray(), outputDir);
 			}
 			
 		} catch (MalformedURLException e) {

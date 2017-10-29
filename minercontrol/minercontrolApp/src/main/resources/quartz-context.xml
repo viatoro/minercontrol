@@ -195,7 +195,7 @@
 				<ref bean="dataPoolJobDetail" />
 				<ref bean="downloadMinerJobDetail" />
 <!-- 				<ref bean="mathPoolToMinerJobDetail" /> -->
-				<ref bean="selectAndDoMinerJobDetail" />
+<!-- 				<ref bean="selectAndDoMinerJobDetail" /> -->
 				<ref bean="checkMinerJobDetail" />
 				<ref bean="sysOutMinerJobDetail" />
 			</list>
@@ -207,7 +207,7 @@
 				<ref bean="dataPoolTrigger" />
 				<ref bean="downloadMinerTrigger" />
 <!-- 				<ref bean="mathPoolToMinerTrigger" /> -->
-				<ref bean="selectAndDoMinerTrigger" />
+<!-- 				<ref bean="selectAndDoMinerTrigger" /> -->
 				<ref bean="checkMinerTrigger" />
 				<ref bean="sysOutMinerTrigger" />
 			</list>

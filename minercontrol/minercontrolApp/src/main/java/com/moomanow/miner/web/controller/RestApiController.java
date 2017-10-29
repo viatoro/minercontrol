@@ -1,5 +1,6 @@
 package com.moomanow.miner.web.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -7,9 +8,11 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.appminer.IAppMiner;
 import com.moomanow.miner.bean.RevenueBean;
+import com.moomanow.miner.config.bean.ConfigUserBean;
+import com.moomanow.miner.config.dao.ConfigMinerDao;
 import com.moomanow.miner.dao.MinerControlDao;
 import com.moomanow.miner.web.util.CustomErrorType;
 
@@ -32,6 +37,8 @@ public class RestApiController {
 	
 	@Autowired
 	private MinerControlDao minerControlDao;
+	@Autowired
+	private ConfigMinerDao configMinerDao;
 	
 	@RequestMapping(value = "/pool/", method = RequestMethod.GET)
 	public ResponseEntity<Map<String, IPoolApi>> listAllPools() {
@@ -113,6 +120,65 @@ public class RestApiController {
 //		return new ResponseEntity<IAppMiner>(miner, HttpStatus.OK);
 //	}
 //	processMining
+	
+	
+	// -------------------Retrieve All Configs---------------------------------------------
+
+	@RequestMapping(value = "/config/", method = RequestMethod.GET)
+	public ResponseEntity<List<ConfigUserBean>> listAllUsers() {
+		ConfigUserBean configUserBean = minerControlDao.getConfigUserBean();
+		List<ConfigUserBean> configUserBeans = new ArrayList<ConfigUserBean>();
+		configUserBeans.add(configUserBean);
+		if (configUserBeans.isEmpty()) {
+			return new ResponseEntity(HttpStatus.NO_CONTENT);
+			// You many decide to return HttpStatus.NOT_FOUND
+		}
+		return new ResponseEntity<List<ConfigUserBean>>(configUserBeans, HttpStatus.OK);
+	}
+	// -------------------Retrieve Single User------------------------------------------
+
+	@RequestMapping(value = "/config/{id}", method = RequestMethod.GET)
+	public ResponseEntity<?> getUser(@PathVariable("id") long id) {
+		logger.info("Fetching User with id {}", id);
+		ConfigUserBean configUserBean = minerControlDao.getConfigUserBean();
+		if (configUserBean == null) {
+			logger.error("User with id {} not found.", id);
+			return new ResponseEntity(new CustomErrorType("User with id " + id 
+					+ " not found"), HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<ConfigUserBean>(configUserBean, HttpStatus.OK);
+	}
+	// ------------------- Update a Config ------------------------------------------------
+
+	@RequestMapping(value = "/config/{id}", method = RequestMethod.PUT)
+	public ResponseEntity<?> updateUser(@PathVariable("id") long id, @RequestBody ConfigUserBean configUserBean) {
+		logger.info("Updating User with id {}", id);
+
+		ConfigUserBean currentConfigUserBean = minerControlDao.getConfigUserBean();
+//		User currentUser = userService.findById(id);
+
+		if (currentConfigUserBean == null) {
+			logger.error("Unable to update. User with id {} not found.", id);
+			return new ResponseEntity(new CustomErrorType("Unable to upate. User with id " + id + " not found."),
+					HttpStatus.NOT_FOUND);
+		}
+		currentConfigUserBean.setBtcAddress(configUserBean.getBtcAddress());
+		currentConfigUserBean.setUsernameMiningPoolHub(configUserBean.getUsernameMiningPoolHub());
+		currentConfigUserBean.setWorkername(configUserBean.getWorkername());
+//		currentConfigUserBean.set
+//		currentUser.setName(user.getName());
+//		currentUser.setAge(user.getAge());
+//		currentUser.setSalary(user.getSalary());
+		
+		minerControlDao.setConfigUserBean(currentConfigUserBean);
+		configMinerDao.saveConfigUser(configUserBean);
+//		userService.updateUser(currentUser);
+		return new ResponseEntity<ConfigUserBean>(currentConfigUserBean, HttpStatus.OK);
+	}
+	
+	
+	
+	
 
 //	@Autowired
 //	UserService userService; //Service which will do all data retrieval/manipulation work

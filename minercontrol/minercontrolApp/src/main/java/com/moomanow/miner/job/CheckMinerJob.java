@@ -75,6 +75,15 @@ public class CheckMinerJob extends QuartzJobBean {
 				}else {
 					miner.check();
 				}
+			}else {
+				Long time = miner.getConfigMinerBean().getTotalTimeBenchSec();
+				if(time ==null)
+					time = 70L;
+				long totalTime = Calendar.getInstance().getTimeInMillis()-miner.getTimeStartLong();
+				if(totalTime>time*1000) {
+					miner.stopBench();
+					return true;
+				}
 			}
 			return false;
 		});

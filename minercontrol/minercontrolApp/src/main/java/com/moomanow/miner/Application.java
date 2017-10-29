@@ -59,7 +59,7 @@ public class Application {
 		Runtime.getRuntime().addShutdownHook(Thread );
 		try {
 			String os = System.getProperty("os.name").toLowerCase();
-			String url = "http://localhost:8080/";
+			String url = "http://localhost:8080/minerControl";
 			if(os.indexOf("win") >= 0) {
 				Runtime rt = Runtime.getRuntime();
 				
