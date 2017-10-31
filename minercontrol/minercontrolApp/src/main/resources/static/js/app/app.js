@@ -4,6 +4,7 @@ app.constant('urls', {
     BASE: 'http://localhost:8080//minerControl'
     ,USER_SERVICE_API : 'http://localhost:8080/minerControl/api/user/'
     ,CONFIG_SERVICE_API : 'http://localhost:8080/minerControl/api/config/'
+    ,RUNING_REVENUE_SERVICE_API : 'http://localhost:8080/minerControl/api/runingRevenue/'
 });
 
 app.config(['$stateProvider', '$urlRouterProvider',
@@ -13,15 +14,21 @@ app.config(['$stateProvider', '$urlRouterProvider',
         .state('Dashboard', {
             url: '/',
             templateUrl: 'partials/dashboard',
-            controller:'DashboardController',
+            controller:'DashBoardController',
             controllerAs:'ctrl',
             resolve: {
-                users: function ($q, UserService) {
-                    console.log('Load all users');
+            		miners: function ($q, RunningRevenueService) {
+                    console.log('Load all configs');
                     var deferred = $q.defer();
-                    UserService.loadAllUsers().then(deferred.resolve, deferred.resolve);
+                    RunningRevenueService.loadAllDatas().then(deferred.resolve, deferred.resolve);
                     return deferred.promise;
-                }
+                },
+		        config: function ($q, ConfigService) {
+		            console.log('Load all configs');
+		            var deferred = $q.defer();
+		            ConfigService.getConfig('1').then(deferred.resolve, deferred.resolve);
+		            return deferred.promise;
+		        }
             }
         })
 //        .state('home', {
@@ -53,6 +60,6 @@ app.config(['$stateProvider', '$urlRouterProvider',
 	            }
 	        })
             ;
-        $urlRouterProvider.otherwise('/');
+//        $urlRouterProvider.otherwise('/');
     }]);
 
