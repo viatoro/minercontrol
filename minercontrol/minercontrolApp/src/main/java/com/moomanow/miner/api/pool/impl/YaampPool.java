@@ -34,6 +34,7 @@ public class YaampPool implements IPoolApi,Serializable {
 	private List<String> algs = new LinkedList<String>();
 	private Map<String, RatePrice> mapRatePrices = new HashMap<String, RatePrice>();
 	private Object data;
+	private String name;
 //	private String url;
 	private ConfigPoolBean configPoolBean;
 	private Long lastTimeCall = Calendar.getInstance().getTimeInMillis()-10000;
@@ -195,6 +196,11 @@ public class YaampPool implements IPoolApi,Serializable {
 	@Override
 	public void setData(Object data) {
 		this.data = data;
+	}
+
+	@Override
+	public String getName() {
+		return configPoolBean!=null?configPoolBean.getName():"YaampPool";
 	}
 
 	

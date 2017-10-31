@@ -1,6 +1,7 @@
 package com.moomanow.miner.bean;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import com.moomanow.miner.api.pool.IPoolApi;
 import com.moomanow.miner.appminer.IAppMiner;
@@ -11,6 +12,8 @@ public class RevenueBean {
 	private String alg;
 	private IAppMiner miner;
 	private BigDecimal price;
+	
+	
 	
 	public String getAlg() {
 		return alg;
@@ -35,6 +38,32 @@ public class RevenueBean {
 	}
 	public void setMiner(IAppMiner miner) {
 		this.miner = miner;
+	}
+	
+	public String getSpeed() {
+		HashRate hashRate = miner.getHashRate(alg);
+		if(hashRate ==null)
+		return "0";
+		else{
+			return hashRate.getRate().toPlainString();
+		}
+	}
+	
+	public String getRate() {
+		Map<String, RatePrice> map = pool.getMapRatePrices();
+		RatePrice s = map.get(alg);
+		if(s==null)
+			return "wait";
+		else {
+			return s.getPrice().toPlainString();
+		}
+	}
+	
+	public String getCoinPerDay() {
+		return price.toPlainString();
+	}
+	public String getUsdPerDay() {
+		return "55555555+";
 	}
 	@Override
 	public int hashCode() {

@@ -7,7 +7,8 @@ import com.moomanow.miner.bean.HashRate;
 import com.moomanow.miner.config.bean.ConfigMinerBean;
 
 public interface IAppMiner {
-
+	
+	public String getName();
 	public void setConfigMinerBean(ConfigMinerBean configMinerBean);
 	public void init();
 	public boolean isRun();

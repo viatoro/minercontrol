@@ -45,23 +45,31 @@
     </div>
     <div class="panel panel-default">
         <!-- Default panel contents -->
-        <div class="panel-heading"><span class="lead">List of Configs </span></div>
+        <div class="panel-heading"><span class="lead">List Mining </span></div>
 		<div class="panel-body">
 			<div class="table-responsive">
 		        <table class="table table-hover">
 		            <thead>
 		            <tr>
-		                <th>btcAddress</th>
-		                <th>usernameMiningPoolHub</th>
-		                <th>workername</th>
+		                <th>Speed Power</th>
+		                <th>miner</th>
+		                <th>alg</th>
+		                <th>pool</th>
+		                <th>Pool Rate Coin/Day</th>
+		                <th>Coin/Day</th>
+		                <th>USD/Day</th>
 		                <th width="100"></th>
 		            </tr>
 		            </thead>
 		            <tbody>
 		            <tr ng-repeat="u in ctrl.getAllConfigs()">
-		                <td>{{u.btcAddress}}</td>
-		                <td>{{u.usernameMiningPoolHub}}</td>
-		                <td>{{u.workername}}</td>
+		                <td>{{u.speed}}</td>
+		                <td>{{u.miner.name}}</td>
+		                <td>{{u.alg}}</td>
+		                <td>{{u.pool.name}}</td>
+		                <td>{{u.rate}}</td>
+		                <td>{{u.coinPerDay}}</td>
+		                <td>{{u.usdPerDay}}</td>
 		                <td><button type="button" ng-click="ctrl.editConfig('1')" class="btn btn-success custom-width">Edit</button></td>
 		            </tr>
 		            </tbody>

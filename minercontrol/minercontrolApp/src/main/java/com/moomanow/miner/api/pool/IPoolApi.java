@@ -9,6 +9,7 @@ import com.moomanow.miner.config.bean.ConfigPoolBean;
 public interface IPoolApi {
 
 	public boolean checkRate();
+	public String getName();
 	public List<RatePrice> getRatePrices();
 	public void setConfigPoolBean(ConfigPoolBean configPoolBean);
 	public ConfigPoolBean getConfigPoolBean();

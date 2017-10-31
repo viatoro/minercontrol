@@ -165,6 +165,11 @@ public class CcminerAppMiner implements IAppMiner {
 	public InputStream getStdIn() {
 		return stdIn;
 	}
+
+	@Override
+	public String getName() {
+		return configMinerBean!=null?configMinerBean.getMinerName():"CCminerAppMiner";
+	}
 	
 	
 
